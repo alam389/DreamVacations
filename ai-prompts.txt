@@ -1,1 +1,3 @@
 # Record all AI tools and prompts that you used to create substantial amounts of code.
+Q:  why is it reading undefined in my env file?
+A: you used back-slashes instead of forward slashes require('dotenv').config({ path: 'C:/SE 3316/clone2/lab-4-alam389/server/.env' });
