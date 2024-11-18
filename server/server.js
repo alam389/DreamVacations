@@ -1,19 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const bcrypt = require('bcrypt');
+app.use(express.json()); // Middleware to parse JSON bodies
+
+
 require('dotenv').config({ path: './.env' });
 console.log("Environment variables loaded from:", './server/.env');// this is me testing this shit
 console.log("PGHOST:", process.env.PGHOST); 
 console.log("PGDATABASE:", process.env.PGDATABASE);
 console.log("PGUSER:", process.env.PGUSER);
 console.log("PGPASSWORD:", process.env.PGPASSWORD);
-const router = express.Router();
+const port = 3000;
 const { Pool } = require('pg');
 const lists = {}; //object to store favorite lists
 
+const router = express.Router();
+const adminRouter = express.Router();
+const publicRouter = express.Router();
+const userRouter = express.Router();
 
-const port = 3000;
-app.use('/api', router);
+app.use('/api',router);
+app.use('/api/public', publicRouter);
+app.use('/api/user', userRouter);
+app.use('/api/admin', adminRouter);
+
 
 const {
     PGHOST,
@@ -31,6 +42,62 @@ const pool = new Pool({
         require: true,
     }
 });
+
+//-----------------------------------User Routes----------------------------------------//
+
+userRouter.post('/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  console.log(`Registration attempt for username: ${username}`);
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;//regex for email validation by making sure it has an @ and a not empty domain or username
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  const client = await pool.connect();
+  try {
+    // Check if the username already exists
+    const userCheck = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (userCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(10);//generate a salt
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    await client.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3)', [username, email, hashedPassword]);
+    res.status(201).json({ message: 'User created successfully' });
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+  
+});
+
+userRouter.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);//query the database
+    const user = result.rows[0];//get the first row
+    if (user && await bcrypt.compare(password, user.password)) {//compare the password using bcrypt
+      console.log(`Login successful for username: ${username}`);
+      res.json({ message: 'Login successful' });
+    } else {
+      res.status(401).json({ error: 'Invalid username or password' });
+    }
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+//---------------------------------Public Routes---------------------------------//
+
 router.get('/all', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -56,7 +123,7 @@ router.get('/:id', async (req, res) => {
     }
   });
 
-router.get('/:id/coordinates',async (req, res) => {
+  router.get('/:id/coordinates',async (req, res) => {
     const destinationId = parseInt(req.params.id, 10); //ID to an integer
     const client = await pool.connect();
 
@@ -117,6 +184,26 @@ router.get('/:id/coordinates',async (req, res) => {
     }
   });
 
+  router.post('/list/:listName', (req, res) => {
+    let { listName } = req.params;
+  
+    // server sanitization
+    listName = listName.replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 15);
+  
+    if (lists[listName]) {
+      res.status(400).json({ error: `List ${listName} already exists` });
+    } else {
+      lists[listName] = [];
+      res.status(200).json({ message: `List ${listName} created successfully` });
+    }
+  });
+  router.get('/lists', (req, res) => {
+    const listNames = Object.keys(lists);
+    res.status(200).json({
+      listNames,
+      lists
+    });
+  });
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
