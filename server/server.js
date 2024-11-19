@@ -4,8 +4,14 @@ const app = express();
 const bcrypt = require('bcrypt');
 app.use(express.json()); // Middleware to parse JSON bodies
 
+// require with API key
+
+
 
 require('dotenv').config({ path: './.env' });
+var emailable = require('emailable')(process.env.EMAILABLE_API_KEY)
+console.log("API Key:", process.env.EMAILABLE_API_KEY);
+
 console.log("Environment variables loaded from:", './server/.env');// this is me testing this shit
 console.log("PGHOST:", process.env.PGHOST); 
 console.log("PGDATABASE:", process.env.PGDATABASE);
@@ -61,12 +67,27 @@ userRouter.post('/register', async (req, res) => {
     if (userCheck.rows.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
     }
+  
+    // Verify the email address using Emailable
+    const response = await emailable.verify(email);
+    console.log('Email verification response:', response);
 
-    const salt = await bcrypt.genSalt(10);//generate a salt
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    await client.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3)', [username, email, hashedPassword]);
-    res.status(201).json({ message: 'User created successfully' });
+    if (response.error) {
+      console.error('Email verification error:', response.error);
+      return res.status(500).json({ error: 'Email verification failed' });
+    }
+    if (typeof response.score !== 'number' || !response.state) {
+      return res.status(500).json({ error: 'Invalid response from email verification service' });
+    }
+    //based on the response from emailable, it will check the score out of 100 and if it is deliverable, if not it will not be created in the database and return an error error
+    if (response.score >= 40 && response.state === 'deliverable') {
+      const salt = await bcrypt.genSalt(10);//generate a salt
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await client.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3)', [username, email, hashedPassword]);
+      res.status(201).json({ message: 'User created successfully' });
+    }else {
+      res.status(400).json({ error: 'Invalid email address' });
+    }
   } catch (error) {
     console.error("Database query error:", error);
     res.status(500).json({ error: 'Internal server error' });
