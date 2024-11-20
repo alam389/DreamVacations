@@ -1,35 +1,36 @@
+
+//importing the libraries
 const express = require('express');
 const cors = require('cors');
 const app = express();
 const bcrypt = require('bcrypt');
-app.use(express.json()); // Middleware to parse JSON bodies
-
-// require with API key
-
-
-
-require('dotenv').config({ path: './.env' });
 var emailable = require('emailable')(process.env.EMAILABLE_API_KEY)
-console.log("API Key:", process.env.EMAILABLE_API_KEY);
+const jwt = require('jsonwebtoken');
+require('dotenv').config({ path: './.env' });
+const { Pool } = require('pg');
 
+//test 
+console.log("API Key:", process.env.EMAILABLE_API_KEY);
 console.log("Environment variables loaded from:", './server/.env');// this is me testing this shit
 console.log("PGHOST:", process.env.PGHOST); 
 console.log("PGDATABASE:", process.env.PGDATABASE);
 console.log("PGUSER:", process.env.PGUSER);
 console.log("PGPASSWORD:", process.env.PGPASSWORD);
 const port = 3000;
-const { Pool } = require('pg');
+
 const lists = {}; //object to store favorite lists
 
 const router = express.Router();
 const adminRouter = express.Router();
 const publicRouter = express.Router();
 const userRouter = express.Router();
-
+app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/api',router);
 app.use('/api/public', publicRouter);
 app.use('/api/user', userRouter);
 app.use('/api/admin', adminRouter);
+userRouter.use(authenticateToken);
+
 
 
 const {
@@ -49,9 +50,21 @@ const pool = new Pool({
     }
 });
 
-//-----------------------------------User Routes----------------------------------------//
+//-----------------------------------helper functions-----------------------------------//
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Expecting format: 'Bearer TOKEN'
 
-userRouter.post('/register', async (req, res) => {
+  if (token == null) return res.sendStatus(401); // No token provided
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403); // Invalid token
+    req.user = user;
+    next();
+  });
+}
+//---------------------------------Public Routes---------------------------------//
+publicRouter.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
   console.log(`Registration attempt for username: ${username}`);
   
@@ -76,7 +89,7 @@ userRouter.post('/register', async (req, res) => {
       console.error('Email verification error:', response.error);
       return res.status(500).json({ error: 'Email verification failed' });
     }
-    if (typeof response.score !== 'number' || !response.state) {
+    if (typeof response.score !== 'number' || !response.state) {//if the response is not a number or does not have a state, it will return an error
       return res.status(500).json({ error: 'Invalid response from email verification service' });
     }
     //based on the response from emailable, it will check the score out of 100 and if it is deliverable, if not it will not be created in the database and return an error error
@@ -97,15 +110,21 @@ userRouter.post('/register', async (req, res) => {
   
 });
 
-userRouter.post('/login', async (req, res) => {
+publicRouter.post('/login', async (req, res) => {
   const { username, password } = req.body;
   const client = await pool.connect();
   try {
     const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);//query the database
     const user = result.rows[0];//get the first row
     if (user && await bcrypt.compare(password, user.password)) {//compare the password using bcrypt
-      console.log(`Login successful for username: ${username}`);
-      res.json({ message: 'Login successful' });
+      const token = jwt.sign({
+        userid: user.user_id,
+        username: user.username}, 
+        process.env.JWT_SECRET, 
+        { expiresIn: '1h' }
+      );
+      console.log(result.rows[0]);//log the results
+      res.json({ message: 'Login successful',userid: user.user_id, token: token});
     } else {
       res.status(401).json({ error: 'Invalid username or password' });
     }
@@ -116,9 +135,6 @@ userRouter.post('/login', async (req, res) => {
     client.release();
   }
 });
-
-//---------------------------------Public Routes---------------------------------//
-
 router.get('/all', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -204,27 +220,85 @@ router.get('/:id', async (req, res) => {
       client.release();
     }
   });
+//-----------------------------------User Routes----------------------------------------//
 
-  router.post('/list/:listName', (req, res) => {
+  userRouter.post('/list/create_list/:listName', async (req, res) => {
     let { listName } = req.params;
-  
+    let userid = req.user.userid;
     // server sanitization
     listName = listName.replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 15);
-  
-    if (lists[listName]) {
-      res.status(400).json({ error: `List ${listName} already exists` });
-    } else {
-      lists[listName] = [];
-      res.status(200).json({ message: `List ${listName} created successfully` });
+    
+    try {
+      const client = await pool.connect();
+      currentList = await client.query('SELECT * FROM userlist WHERE user_id = $1', [userid]);//query the database
+      if (currentList.rows.length < 20 && currentList.rows.find(list => list.listname === listName) === undefined) {
+        await client.query('INSERT INTO userlist (listname, user_id) VALUES ($1, $2)', [listName, userid]);
+        res.status(201).json({ message: 'List created successfully' });
+      }else {
+        res.status(400).json({ error: 'List limit reached or list name already exists' });
+      }
+    }catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
   });
-  router.get('/lists', (req, res) => {
-    const listNames = Object.keys(lists);
-    res.status(200).json({
-      listNames,
-      lists
-    });
+
+  userRouter.get('/list/getalllist', async(req, res) => {
+    let userid = req.user.userid;
+
+    try{
+      console.log(`Getting all lists for user "${userid}"`);
+      let client = await pool.connect();
+      const results = await client.query('SELECT * FROM userlist WHERE user_id = $1', [userid]);
+      res.json(results.rows);
+    }catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   });
+
+  userRouter.get('/list/getalist/:listname', async(req, res) => {
+    let listname = req.params.listname;
+    let userid = req.user.userid;
+
+    try{
+      console.log(`Getting all lists for user "${userid}"`);
+      let client = await pool.connect();
+      const results = await client.query('SELECT * FROM userlist WHERE (user_id, listname) = $1, $2', [userid, listname]);
+      res.json(results.rows);
+    }catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  userRouter.delete('/list/delete/:listname', async(req, res)=>{
+    let listname = req.params.listname;
+    let userid = req.user.userid;
+
+    try{
+      console.log(`Deleting list "${listname}" for user "${userid}"`);
+      let client = await pool.connect();
+      await client.query('DELETE FROM userlist WHERE (user_id, listname) = ($1, $2)', [userid, listname]);
+      res.json({ message: 'List deleted successfully' });
+    }catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  })
+
+  userRouter.put('/list/add/:listname/:destinationid', async(req, res) => {
+    const{ listname,destinationid }= req.params;
+
+    try{
+      
+    }catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+  });
+
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
