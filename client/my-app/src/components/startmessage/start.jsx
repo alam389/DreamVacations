@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import './start.css'; // Add your styles here
 
 const Start = () => {
     const [showModal, setShowModal] = useState(false);
+    const navigate = useNavigate();
 
     const handleStart = () => {
-        setShowModal(true); // Show the modal when Start is clicked
-    };
-
-    const handleCloseModal = () => {
-        setShowModal(false); // Hide the modal
-    };
+        navigate('/login'); // Navigate to the Login component
+    }
 
     return (
         <div className="start-container">
@@ -19,24 +18,6 @@ const Start = () => {
             <button onClick={handleStart} className="start-button">
                 Start
             </button>
-
-            {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <button className="close-btn" onClick={handleCloseModal}>
-                            ✖
-                        </button>
-                        <h2>Choose an Option</h2>
-                        <div className="modal-actions">
-                            <button className="modal-btn">Sign In</button>
-                            <button className="modal-btn">Sign Up</button>
-                            <button className="modal-btn" onClick={handleCloseModal}>
-                                Continue as Guest
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
