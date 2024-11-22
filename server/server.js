@@ -63,6 +63,7 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
 //---------------------------------Public Routes---------------------------------//
 publicRouter.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
@@ -277,7 +278,7 @@ router.get('/:id', async (req, res) => {
     let userid = req.user.userid;
 
     try{
-      console.log(`Deleting list "${listname}" for user "${userid}"`);
+      console.log(`Deleting list "${listname}" for user "${userid}"`);//test
       let client = await pool.connect();
       await client.query('DELETE FROM userlist WHERE (user_id, listname) = ($1, $2)', [userid, listname]);
       res.json({ message: 'List deleted successfully' });
@@ -288,16 +289,25 @@ router.get('/:id', async (req, res) => {
   })
 
   userRouter.put('/list/add/:listname/:destinationid', async(req, res) => {
-    const{ listname,destinationid }= req.params;
+    const{listname, destinationid}= req.params;
 
     try{
-      
+      let client = await pool.connect();
+      await client.query('INSERT INTO userlist (listname, destination_id) VALUES ($1, $2)', [listname, destinationid]);
+
+
     }catch (error) {
       console.error('Database query error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
 
   });
+
+//-----------------------------------Admin Routes----------------------------------------//
+
+
+
+
 
 
 app.listen(port, () => {

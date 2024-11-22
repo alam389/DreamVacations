@@ -1,0 +1,88 @@
+/* start.css */
+.start-container {
+    text-align: center;
+    margin-top: 50px;
+    background-image: url('C:/SE 3316/clone2/lab-4-alam389/client/my-app/public/img/greece.jpg'); /* Adjust the path if necessary */
+    background-size: cover; /* Makes the image cover the entire container */
+    background-repeat: no-repeat; /* Prevents the image from repeating */
+    background-position: center; /* Centers the image */
+    height: 100vh; /* Makes the container take the full viewport height */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center content */
+    align-items: center; /* Horizontally center content */
+    color: white; /* Optional: Ensure text is readable */
+  }
+  
+ 
+/* Start Button Styles */
+.start-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.start-button:hover {
+    background-color: #0056b3;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Modal Box */
+.modal {
+    background: white;
+    padding: 20px;
+    width: 400px;
+    border-radius: 10px;
+    position: relative;
+    text-align: center;
+    color: #333;
+}
+
+/* Close Button */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Modal Action Buttons */
+.modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-btn {
+    padding: 10px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal-btn:hover {
+    background-color: #0056b3;
+}
