@@ -1,16 +1,24 @@
 
 //importing the libraries
 const express = require('express');
-const cors = require('cors');
 const app = express();
 const bcrypt = require('bcrypt');
-var emailable = require('emailable')(process.env.EMAILABLE_API_KEY)
 const jwt = require('jsonwebtoken');
 require('dotenv').config({ path: './.env' });
 const { Pool } = require('pg');
+const cors = require('cors')
+const { sendAuthEmail } = require('./mailer'); // Import the sendEmail function
+
+
+app.use(cors()); // Enable CORS for all routes
+
+app.use(cors({
+  origin: 'http://localhost:5173', // Allow only this origin to access the server
+  methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], // Allowed methods
+  credentials: true, // Allow cookies and authentication tokens
+}));
 
 //test 
-console.log("API Key:", process.env.EMAILABLE_API_KEY);
 console.log("Environment variables loaded from:", './server/.env');// this is me testing this shit
 console.log("PGHOST:", process.env.PGHOST); 
 console.log("PGDATABASE:", process.env.PGDATABASE);
@@ -69,7 +77,7 @@ publicRouter.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
   console.log(`Registration attempt for username: ${username}`);
   
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;//regex for email validation by making sure it has an @ and a not empty domain or username
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
@@ -82,36 +90,60 @@ publicRouter.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
   
-    // Verify the email address using Emailable
-    const response = await emailable.verify(email);
-    console.log('Email verification response:', response);
+    // Generate salt and hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    // Insert new user into the database
+    await client.query(
+      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3)',
+      [username, email, hashedPassword]
+    );
+    // Send Authentication Email
+    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const authLink = `${process.env.APP_URL}/auth?token=${token}`;
+    const html = `<p>Welcome, ${username}! Please verify your email by clicking <a href="${authLink}">here</a>.</p>`;
 
-    if (response.error) {
-      console.error('Email verification error:', response.error);
-      return res.status(500).json({ error: 'Email verification failed' });
-    }
-    if (typeof response.score !== 'number' || !response.state) {//if the response is not a number or does not have a state, it will return an error
-      return res.status(500).json({ error: 'Invalid response from email verification service' });
-    }
-    //based on the response from emailable, it will check the score out of 100 and if it is deliverable, if not it will not be created in the database and return an error error
-    if (response.score >= 40 && response.state === 'deliverable') {
-      const salt = await bcrypt.genSalt(10);//generate a salt
-      const hashedPassword = await bcrypt.hash(password, salt);
-      await client.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3)', [username, email, hashedPassword]);
-      res.status(201).json({ message: 'User created successfully' });
-    }else {
-      res.status(400).json({ error: 'Invalid email address' });
-    }
+    await sendAuthEmail(email, 'Authenticate Your Email', html);
+    
+    
+    res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    console.error("Database query error:", error);
+    console.error("Database query error:", error.stack);
     res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();
   }
-  
 });
 
-publicRouter.post('/login', async (req, res) => {
+publicRouter.get('/auth', async (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(400).json({ error: 'No token provided' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    const client = await pool.connect();
+    try {
+      const result = await client.query('UPDATE users SET verified = true WHERE username = $1', [user.username]);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+      console.error("Database query error:", error);
+      res.status(500).json({ error: 'Internal server error' });
+    } finally {
+      client.release();
+    }
+  });
+});
+
+publicRouter.post('/login' ,async (req, res) => {
   const { username, password } = req.body;
   const client = await pool.connect();
   try {

@@ -7,18 +7,46 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
     if (isLogin) {
       console.log('Login:', { username, password });
-      
+      try{
+        const response = await fetch('http://localhost:3000/api/public/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username: username, password: password }),
+        });
+        const data = await response.json();
+        console.log(data);
+
+      }catch(err){
+        console.log(err);
+      }
 
     } else {
       console.log('Signup:', { email, username, password });
+      try{
+        const response = await fetch('http://localhost:3000/api/public/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username: username, email: email,password: password }),
+        });
+        const data = await response.json();
+        console.log(data);
+
+      }catch(err){
+        console.log(err);
+      }
     }
   };
 
   return (
+    <div className="login-page">
     <div className="login-container">
       <h2>{isLogin ? 'Login' : 'Sign Up'}</h2>
       <form onSubmit={handleSubmit}>
@@ -63,6 +91,7 @@ const Login = () => {
         </button>
       </p>
     </div>
+  </div>
   );
 };
 
