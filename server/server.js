@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-require('dotenv').config({ path: './.env' });
+require('dotenv').config({ path: './data/.env' });
 const { Pool } = require('pg');
 const cors = require('cors')
 const { sendAuthEmail } = require('./mailer'); // Import the sendEmail function

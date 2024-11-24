@@ -1,0 +1,62 @@
+/* NavBar.css */
+
+/* 1. Style the <nav> element to span full width and fix it at the top */
+.navbar {
+  width: 100%;
+  background-color: #ffffff; /* Choose your desired background color */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Adds a subtle shadow */
+  position: fixed; /* Fixes the navbar at the top */
+  top: 0;
+  left: 0;
+  z-index: 1000; /* Ensures the navbar stays above other elements */
+}
+
+/* 2. Container to center content and control maximum width */
+.navbar-container {
+  max-width: 1200px; /* Adjust as needed for your design */
+  margin: 0 auto; /* Centers the container */
+  padding: 0.5rem 1rem; /* Adds padding around the content */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 3. Logo Styling */
+.navbar-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #3498db;
+  text-decoration: none;
+}
+
+/* 4. Button Container */
+.navbar-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+/* 5. Individual Buttons */
+.navbar-button {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  color: #3498db; /* Match with your primary color */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 6. Button Hover Effects */
+.navbar-button:hover {
+  background-color: #f0f0f0;
+  color: #333333; /* Change text color on hover if needed */
+}
+
+/* 7. Primary Button Styling */
+.navbar-button-primary {
+  background-color: #3498db;
+  color: #ffffff;
+}
+
+.navbar-button-primary:hover {
+  background-color: #2980b9;
+}

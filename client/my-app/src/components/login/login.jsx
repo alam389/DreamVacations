@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './login.css';
-
+import { useNavigate } from 'react-router-dom';
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
@@ -9,6 +8,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [showTerms, setShowTerms] = useState(false);
   const navigate = useNavigate();
+
 
   const handleGuestLogin = () => {
     navigate('/guest_access');
@@ -100,7 +100,7 @@ const Login = () => {
           <button type="submit">{isLogin ? 'Login' : 'Sign Up'}</button>
         </form>
         <p>
-          {isLogin ? "Don't have an account? " : 'Already have an account? '}
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button onClick={() => setIsLogin(!isLogin)}>
             {isLogin ? 'Sign Up' : 'Login'}
           </button>
@@ -125,7 +125,52 @@ const Login = () => {
           <div className="modal">
             <h3>Terms and Conditions</h3>
             <div className="modal-content">
-              {/* Terms content goes here */}
+              <p><strong>Security and Privacy Policy</strong></p>
+              <p>Effective Date: [2022-01-01]</p>
+              <p>Last Updated: [2024-11-23]</p>
+              <p>We are committed to protecting your personal information and maintaining your privacy. Our Security and Privacy Policy outlines how we collect, use, and safeguard your data:</p>
+              <p><strong>Data Collection and Usage</strong></p>
+              <p>We collect only necessary information, such as your name, email address, and usage data, for account creation and improving our services.</p>
+              <p>Your data is never sold to third parties.</p>
+              <p><strong>Data Protection</strong></p>
+              <p>All sensitive data is encrypted during transmission using TLS/SSL protocols.</p>
+              <p>We implement industry-standard security measures, including firewalls, access control, and regular security audits, to prevent unauthorized access.</p>
+              <p><strong>User Rights</strong></p>
+              <p>You can request to view, modify, or delete your personal data by contacting us at [alam389@uwo.ca].</p>
+              <p><strong>Cookies</strong></p>
+              <p>We use cookies for authentication and analytics to improve your user experience.</p>
+              <p><strong>Acceptable Use Policy (AUP)</strong></p>
+              <p>Effective Date: [2022-01-01]</p>
+              <p>Last Updated: [2024-11-23]</p>
+              <p>This Acceptable Use Policy governs your use of our platform. By accessing our services, you agree to adhere to the following guidelines:</p>
+              <p><strong>Prohibited Activities</strong></p>
+              <p>You may not use our services to upload, share, or distribute content that is illegal, harmful, or abusive.</p>
+              <p>Unauthorized access to accounts, systems, or data is strictly prohibited.</p>
+              <p><strong>Resource Usage</strong></p>
+              <p>Activities that excessively consume bandwidth, storage, or computing resources are not allowed.</p>
+              <p><strong>Compliance</strong></p>
+              <p>Users must comply with all local, national, and international laws when using our platform.</p>
+              <p>Failure to adhere to this policy may result in account suspension or termination.</p>
+              <p><strong>DMCA Notice & Takedown Policy</strong></p>
+              <p>Effective Date: [2022-01-01]</p>
+              <p>Last Updated: [2024-11-23]</p>
+              <p>We respect the intellectual property rights of others. If you believe your copyrighted work has been infringed on our platform, please follow the steps below:</p>
+              <p><strong>Filing a DMCA Notice</strong></p>
+              <p>Submit your claim in writing to [jacketforsales@gmail.com] with the following details:</p>
+              <ul>
+                <li>Your contact information.</li>
+                <li>A description of the copyrighted work being infringed.</li>
+                <li>The URL of the infringing material.</li>
+                <li>A statement of good faith belief that the use is unauthorized.</li>
+                <li>A statement under penalty of perjury that your claim is accurate.</li>
+              </ul>
+              <p><strong>Counter-Notice</strong></p>
+              <p>If you believe a takedown was in error, submit a counter-notice to the same email address with:</p>
+              <ul>
+                <li>Your contact information.</li>
+                <li>A statement under penalty of perjury that the content was removed in error.</li>
+              </ul>
+              <p>We will act on all valid takedown notices promptly. Repeated copyright violations may result in account termination.</p>
             </div>
             <button className="close-button" onClick={toggleTermsModal}>
               Close

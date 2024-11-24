@@ -1,87 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+@import url('https://unpkg.com/leaflet@1.7.1/dist/leaflet.css');
+
 body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background-image: url('/img/greece.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.guest-access {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.content-wrapper {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+#searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.search-type, .search-input, .results-count {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radio-group {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f1f3f5;
+  border-radius: 25px;
+  padding: 0.5rem;
+}
+
+.radio-label {
+  flex: 1;
+  text-align: center;
+}
+
+.radio-label input[type="radio"] {
+  display: none;
+}
+
+.radio-label span {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  background-color: #3498db;
+  color: white;
+}
+
+.search-input {
+  position: relative;
+}
+
+.search-input input[type="text"] {
+  width: 100%;
+  padding: 1rem;
+  padding-right: 3rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 25px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.search-input input[type="text"]:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.search-input button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.search-input button:hover {
+  background-color: #2980b9;
+}
+
+.results-count {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.results-count select {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 15px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.results-count select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.map-container {
+  width: 100%;
+  max-width: 800px;
+  height: 400px;
+  background-color: #f1f3f5;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.map-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-size: 1.5rem;
+  color: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 1.5rem;
   }
-  
-  h1,
-  h2 {
-    color: #333;
-    text-align: center;
+
+  h1 {
+    font-size: 2rem;
   }
-  
-  #searchForm,
-  #listForm {
-    margin: 1rem auto;
-    padding: 1rem;
-    max-width: 600px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
+
+  .radio-group {
+    flex-direction: column;
+    gap: 0.5rem;
   }
-  
-  #searchForm label,
-  #listForm label {
-    margin-right: 5px;
-    font-weight: bold;
+
+  .radio-label span {
+    display: block;
   }
-  
-  #searchForm input[type="text"],
-  #listForm input[type="text"],
-  #searchForm select,
-  #listForm button,
-  #searchForm button {
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    flex: 1;
+
+  .search-input button {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 1rem;
   }
-  
-  #map {
-    height: 400px;
-    margin: 1rem auto;
-    max-width: 90%;
-    border: 2px solid #ccc;
-    border-radius: 5px;
+
+  .results-count {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  #results,
-  #listResults {
-    margin: 1rem auto;
-    max-width: 90%;
-    padding: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background: #f9f9f9;
-  }
-  
-  #sortControlsContainer {
-    margin: 1rem auto;
-    padding: 1rem;
-    max-width: 600px;
-    text-align: center;
-  }
-  
-  button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background-color: #0056b3;
-  }
-  
-  select {
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
-  
+}
+
