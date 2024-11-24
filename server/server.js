@@ -94,20 +94,24 @@ publicRouter.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
-    // Insert new user into the database
-    await client.query(
-      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3)',
+    // Insert new user into the database and return the inserted user
+    const insertResult = await client.query(
+      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *',
       [username, email, hashedPassword]
     );
+
+    
+    const user = insertResult.rows[0]; // Capture the inserted user
+    console.log('Newly registered user:', user);
+    
     // Send Authentication Email
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '3h' });
     const authLink = `${process.env.APP_URL}/auth?token=${token}`;
     const html = `<p>Welcome, ${username}! Please verify your email by clicking <a href="${authLink}">here</a>.</p>`;
 
     await sendAuthEmail(email, 'Authenticate Your Email', html);
-    
-    
-    res.status(201).json({ message: 'User created successfully' });
+
+    res.status(201).json({ message: 'User created successfully', token: token });
   } catch (error) {
     console.error("Database query error:", error.stack);
     res.status(500).json({ error: 'Internal server error' });
@@ -116,27 +120,31 @@ publicRouter.post('/register', async (req, res) => {
   }
 });
 
-publicRouter.get('/auth', async (req, res) => {
-  const { token } = req.query;
+publicRouter.post('/auth', async (req, res) => {
+  const { token } = req.body; // Extract token from the request body
   if (!token) {
     return res.status(400).json({ error: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
+    console.log('Decoded token:', decoded); // Verify that user_id is present
 
     const client = await pool.connect();
     try {
-      const result = await client.query('UPDATE users SET verified = true WHERE username = $1', [user.username]);
+      const username = decoded.username;
+      console.log(`Verifying email for user ID: ${username}`);
+
+      const result = await client.query('UPDATE users SET email_verified = true WHERE username = $1', [username]);
       if (result.rowCount === 0) {
         return res.status(404).json({ error: 'User not found' });
       }
       res.json({ message: 'Email verified successfully' });
     } catch (error) {
       console.error("Database query error:", error);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error', message: error.message });
     } finally {
       client.release();
     }

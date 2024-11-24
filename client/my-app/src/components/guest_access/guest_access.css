@@ -1,0 +1,87 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  h1,
+  h2 {
+    color: #333;
+    text-align: center;
+  }
+  
+  #searchForm,
+  #listForm {
+    margin: 1rem auto;
+    padding: 1rem;
+    max-width: 600px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  #searchForm label,
+  #listForm label {
+    margin-right: 5px;
+    font-weight: bold;
+  }
+  
+  #searchForm input[type="text"],
+  #listForm input[type="text"],
+  #searchForm select,
+  #listForm button,
+  #searchForm button {
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    flex: 1;
+  }
+  
+  #map {
+    height: 400px;
+    margin: 1rem auto;
+    max-width: 90%;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  #results,
+  #listResults {
+    margin: 1rem auto;
+    max-width: 90%;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+  }
+  
+  #sortControlsContainer {
+    margin: 1rem auto;
+    padding: 1rem;
+    max-width: 600px;
+    text-align: center;
+  }
+  
+  button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+  }
+  

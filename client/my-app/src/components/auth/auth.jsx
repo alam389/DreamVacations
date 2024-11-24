@@ -8,10 +8,11 @@ const Auth = () => {
     const verifyEmail = async () => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get('token');
+      console.log(token);
 
       if (token) {
         try {
-          const response = await fetch('http://localhost:3000/api/public/register', {
+          const response = await fetch('http://localhost:3000/api/public/auth', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
