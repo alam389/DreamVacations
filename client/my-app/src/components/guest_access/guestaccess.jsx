@@ -1,19 +1,44 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState} from 'react';
 import NavBar from '../navbar/NavBar';
+import PublicLists from '../publiclist/publiclist.jsx';
 import './guest_access.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
 const GuestAccess = () => {
-  const [searchType, setSearchType] = useState('Destination');
+  const [searchType, setSearchType] = useState('destination');
   const [searchQuery, setSearchQuery] = useState('');
   const [resultsCount, setResultsCount] = useState('5');
-  const navigate = useNavigate();
+  const [results, setResults] = useState([]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle search submission
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/search/${searchType}/${searchQuery}/${resultsCount}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Search results:', data);
+      setResults(data);
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+
     console.log('Search submitted:', { searchType, searchQuery, resultsCount });
+  };
+
+  const handleDDGSearch = (destination) => {
+    const query = encodeURIComponent(destination);
+    const url = `https://duckduckgo.com/?q=${query}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -51,41 +76,52 @@ const GuestAccess = () => {
               <i className="fas fa-search"></i> Search
             </button>
           </div>
-          <div className="results-count">
-            <label htmlFor="selectNum">Show results:</label>
-            <select
-              name="selectNum"
-              id="selectNum"
-              value={resultsCount}
-              onChange={(e) => setResultsCount(e.target.value)}
-            >
-              {[5, 10, 20, 50].map((num) => (
-                <option key={num} value={num.toString()}>
-                  {num}
-                </option>
-              ))}
-            </select>
-          </div>
         </form>
-      </div>
-      <div id="map" className="map-container">
-        <MapContainer
-          center={[48.8566, 2.3522]} // Coordinates for Paris
-          zoom={5}
-          scrollWheelZoom={false}
-          style={{ height: '100%', width: '100%' }}
-        >
+
+        {/* Map container */}
+        <MapContainer center={[0, 0]} zoom={2} scrollWheelZoom={false} style={{ height: '500px', width: '100%' }}>
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
           />
-          <Marker position={[48.8566, 2.3522]}>
-            <Popup>
-              Paris, France
-            </Popup>
-          </Marker>
-          {/* Add more markers or layers as needed */}
+          {results.map((destination, index) => (
+            <Marker key={index} position={[destination.latitude, destination.longitude]}>
+              <Popup>
+                <b>{destination.destination}</b><br />{destination.country}
+                <b>Region:</b> {destination.region}<br />
+                <b>Cultural Significance:</b> {destination.cultural_significance}<br />
+                <b>Safety:</b> {destination.safety}<br />
+                <b>Approximate Annual Tourists:</b> {destination.approximate_annual_tourists}<br />
+                <b>Best Time to Visit:</b> {destination.best_time_to_visit}<br />
+                <b>Category:</b> {destination.category}<br />
+                <b>Cost of Living:</b> {destination.cost_of_living}<br />
+                <b>Currency:</b> {destination.currency}<br />
+                <b>Description:</b> {destination.description}<br />
+                <b>Famous Foods:</b> {destination.famous_foods}<br />
+                <b>Language:</b> {destination.language}<br />
+                <b>Majority Religion:</b> {destination.majority_religion}<br />
+                <button onClick={() => handleDDGSearch(destination.destination)}>
+                  Search on DDG
+                </button>
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
+
+        {/* Display search results */}
+        <ul>
+          {results.map((destination, index) => (
+            <li key={index}>
+              {destination.destination}, {destination.country}
+              <button onClick={() => handleDDGSearch(destination.destination)}>
+                Search on DDG
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {/* Display public lists */}
+        <PublicLists />
       </div>
     </div>
   );

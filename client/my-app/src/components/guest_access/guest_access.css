@@ -43,7 +43,9 @@ h1 {
   gap: 1.5rem;
 }
 
-.search-type, .search-input, .results-count {
+.search-type,
+.search-input,
+.results-count {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -62,7 +64,7 @@ h1 {
   text-align: center;
 }
 
-.radio-label input[type="radio"] {
+.radio-label input[type='radio'] {
   display: none;
 }
 
@@ -74,42 +76,43 @@ h1 {
   transition: all 0.3s ease;
 }
 
-.radio-label input[type="radio"]:checked + span {
+.radio-label input[type='radio']:checked + span {
   background-color: #3498db;
   color: white;
 }
 
 .search-input {
-  position: relative;
+  display: flex; /* Ensure horizontal alignment */
+  align-items: center; /* Vertically center elements */
+  width: 100%; /* Full width */
+  gap: 0.5rem; /* Spacing between input and button */
 }
 
-.search-input input[type="text"] {
-  width: 100%;
+.search-input input[type='text'] {
+  flex: 1; /* Input takes up remaining space */
   padding: 1rem;
-  padding-right: 3rem;
   border: 2px solid #e0e0e0;
   border-radius: 25px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
+  box-sizing: border-box;
 }
 
-.search-input input[type="text"]:focus {
+.search-input input[type='text']:focus {
   outline: none;
   border-color: #3498db;
 }
 
 .search-input button {
-  position: absolute;
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  padding: 0.75rem 1.5rem;
   cursor: pointer;
+  font-size: 1rem;
   transition: background-color 0.3s ease;
+  white-space: nowrap;
 }
 
 .search-input button:hover {
@@ -173,11 +176,15 @@ h1 {
     display: block;
   }
 
+  /* Adjusted styles to keep the search button beside the input field */
+  .search-input {
+    flex-direction: row; /* Ensure horizontal alignment */
+    align-items: center;
+  }
+
   .search-input button {
-    position: static;
-    transform: none;
-    width: 100%;
-    margin-top: 1rem;
+    width: auto; /* Remove full width */
+    margin-top: 0; /* Remove top margin */
   }
 
   .results-count {
@@ -185,4 +192,3 @@ h1 {
     align-items: flex-start;
   }
 }
-

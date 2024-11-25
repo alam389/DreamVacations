@@ -176,18 +176,7 @@ publicRouter.post('/login' ,async (req, res) => {
     client.release();
   }
 });
-router.get('/all', async (req, res) => {
-    const client = await pool.connect();
-    try {
-        const result = await client.query('SELECT * FROM destinations');
-        res.json(result.rows);
-    } catch (error) {
-        console.error("Database query error:", error);
-        res.status(400).json({ error: error.message });
-    } finally {
-        client.release();
-    }
-});
+
 router.get('/:id', async (req, res) => {
     const destinationId = parseInt(req.params.id, 10); //convert ID to an integer
     const client = await pool.connect();
@@ -231,16 +220,17 @@ router.get('/:id', async (req, res) => {
     }
   
     try {
-      // Construct the query safely
+      // Construct the query using trigram similarity
       const query = `
-        SELECT * 
+        SELECT *
         FROM public.destinations
-        WHERE ${field} ILIKE $1
+        WHERE ${field} % $1
+        ORDER BY similarity(${field}, $1) DESC
         ${limit ? 'LIMIT $2' : ''}
       `;
   
       // Execute the query with parameters
-      const params = [`%${pattern}%`];
+      const params = [pattern];
       if (limit) params.push(limit);
   
       const result = await client.query(query, params);
@@ -261,42 +251,47 @@ router.get('/:id', async (req, res) => {
       client.release();
     }
   });
+
+  publicRouter.get('/list/getalllists', async (req, res) => {
+    let client = await pool.connect();
+    try {
+      const results = await client.query('SELECT * FROM userlist WHERE visibility = true');
+      res.json(results.rows);
+    } catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+      client.release();
+    }
+  });
+
 //-----------------------------------User Routes----------------------------------------//
 
-  userRouter.post('/list/create_list/:listName', async (req, res) => {
-    let { listName } = req.params;
-    let userid = req.user.userid;
-    // server sanitization
-    listName = listName.replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 15);
-    
-    try {
-      const client = await pool.connect();
-      currentList = await client.query('SELECT * FROM userlist WHERE user_id = $1', [userid]);//query the database
-      if (currentList.rows.length < 20 && currentList.rows.find(list => list.listname === listName) === undefined) {
-        await client.query('INSERT INTO userlist (listname, user_id) VALUES ($1, $2)', [listName, userid]);
-        res.status(201).json({ message: 'List created successfully' });
-      }else {
-        res.status(400).json({ error: 'List limit reached or list name already exists' });
-      }
-    }catch (error) {
-      console.error('Database query error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+userRouter.post('/list/create_list/:listName', async (req, res) => {
+  let { listName } = req.params;
+  let { visibility } = req.body; 
+  let userid = req.user.userid;
+  let username = req.user.username;
 
-  userRouter.get('/list/getalllist', async(req, res) => {
-    let userid = req.user.userid;
-
-    try{
-      console.log(`Getting all lists for user "${userid}"`);
-      let client = await pool.connect();
-      const results = await client.query('SELECT * FROM userlist WHERE user_id = $1', [userid]);
-      res.json(results.rows);
-    }catch (error) {
-      console.error('Database query error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+  // Server sanitization
+  listName = listName.replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 15);
+  try {
+    const client = await pool.connect();
+    const currentList = await client.query('SELECT * FROM userlist WHERE user_id = $1', [userid]); // Query the database
+    if (currentList.rows.length < 20 && currentList.rows.find(list => list.listname === listName) === undefined) {
+      await client.query(
+        'INSERT INTO userlist (listname, user_id, visibility, date_modified, username) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)',
+        [listName, userid, visibility, username]
+      );
+      res.status(201).json({ message: 'List created successfully' });
+    } else {
+      res.status(400).json({ error: 'List limit reached or list name already exists' });
     }
-  });
+  } catch (error) {
+    console.error('Database query error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
   userRouter.get('/list/getalist/:listname', async(req, res) => {
     let listname = req.params.listname;

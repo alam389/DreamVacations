@@ -1,0 +1,55 @@
+.public-lists {
+    margin-top: 2rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .public-lists h2 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .lists-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .list-card {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .list-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .list-card h3 {
+    color: #3498db;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .list-details p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    color: #34495e;
+  }
+  
+  .list-details p strong {
+    font-weight: 600;
+  }
+  
+  @media (max-width: 768px) {
+    .lists-container {
+      grid-template-columns: 1fr;
+    }
+}
