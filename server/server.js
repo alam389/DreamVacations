@@ -267,21 +267,22 @@ router.get('/:id', async (req, res) => {
 
 //-----------------------------------User Routes----------------------------------------//
 
-userRouter.post('/list/create_list/:listName', async (req, res) => {
-  let { listName } = req.params;
-  let { visibility } = req.body; 
+userRouter.post('/list/create_list', async (req, res) => {
+  
+  let { visibility, description, listname } = req.body;
+
   let userid = req.user.userid;
   let username = req.user.username;
 
-  // Server sanitization
-  listName = listName.replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 15);
+  //server sani
+  listname = listname.replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 15);
   try {
     const client = await pool.connect();
     const currentList = await client.query('SELECT * FROM userlist WHERE user_id = $1', [userid]); // Query the database
-    if (currentList.rows.length < 20 && currentList.rows.find(list => list.listname === listName) === undefined) {
+    if (currentList.rows.length < 20 && currentList.rows.find(list => list.listname === listname) === undefined) {
       await client.query(
-        'INSERT INTO userlist (listname, user_id, visibility, date_modified, username) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)',
-        [listName, userid, visibility, username]
+        'INSERT INTO userlist (listname, user_id, visibility, date_modified, description, username) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4, $5)',
+        [listname, userid, visibility,description, username]
       );
       res.status(201).json({ message: 'List created successfully' });
     } else {
@@ -333,6 +334,19 @@ userRouter.post('/list/create_list/:listName', async (req, res) => {
     } catch (error) {
       console.error('Database query error:', error);
       return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  userRouter.get('/list/getalllists', async (req, res) => {
+    let client = await pool.connect();
+    try {
+      const results = await client.query('SELECT * FROM userlist WHERE user_id = $1', [req.user.userid]);
+      res.json(results.rows);
+    } catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+      client.release();
     }
   });
 //-----------------------------------Admin Routes----------------------------------------//

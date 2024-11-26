@@ -192,3 +192,36 @@ h1 {
     align-items: flex-start;
   }
 }
+.user-lists-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.user-lists {
+  max-height: 400px; /* Set a max height for the scrollable container */
+  overflow-y: auto; /* Enable vertical scrolling */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #f9f9f9;
+}
+
+.list-item {
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.list-item:last-child {
+  border-bottom: none; /* Remove border from the last item */
+}
+
+.list-item h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.list-item p {
+  margin: 0.5rem 0 0;
+  color: #666;
+}

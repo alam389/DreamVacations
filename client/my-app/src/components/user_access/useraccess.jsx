@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import NavBar from './usernavbar.jsx';
 import PublicLists from '../publiclist/publiclist.jsx';
+import CreateListForm from './createlist.jsx'; // Import the new CreateListForm component\
+import UserList from './displayuserlist.jsx'; // Import the new UserList component
+
 import './user_access.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+
 const UserAccess = () => {
   const [searchType, setSearchType] = useState('destination');
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,14 +45,15 @@ const UserAccess = () => {
     window.open(url, '_blank');
   };
 
-  const fetchUserLists = async () => {
+  const handleCreateList = async (listname, description, isPublic) => {
     try {
-      const response = await fetch('http://localhost:3000/api/user/lists', {
-        method: 'GET',
+      const response = await fetch('http://localhost:3000/api/user/list/create_list', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include JWT token
         },
+        body: JSON.stringify({ listname, description, visibility: isPublic }),
       });
 
       if (!response.ok) {
@@ -56,16 +61,12 @@ const UserAccess = () => {
       }
 
       const data = await response.json();
-      setUserLists(data);
+      console.log('List created:', data);
+      setUserLists([...userLists, data]); // Add the new list to the user lists
     } catch (error) {
-      console.error('Failed to fetch user lists:', error);
+      console.error('Failed to create list:', error);
     }
   };
-
-  // Fetch user lists when the component mounts
-  useEffect(() => {
-    fetchUserLists();
-  }, []);
 
   return (
     <div className="user-access">
@@ -134,32 +135,10 @@ const UserAccess = () => {
           ))}
         </MapContainer>
 
-        {/* Display search results */}
-        <ul>
-          {results.map((destination, index) => (
-            <li key={index}>
-              {destination.destination}, {destination.country}
-              <button onClick={() => handleDDGSearch(destination.destination)}>
-                Search on DDG
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        {/* Display user lists */}
-        <div className="user-lists">
-          <h2>Your Lists</h2>
-          <ul>
-            {userLists.map((list, index) => (
-              <li key={index}>
-                {list.listname}
-                <button onClick={() => handleDDGSearch(list.listname)}>
-                  View List
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Create a new list */}
+        <CreateListForm handleCreateList={handleCreateList} />
+        
+        < UserList /> 
 
         {/* Display public lists */}
         <PublicLists />
