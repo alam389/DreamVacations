@@ -27,7 +27,7 @@ const PublicLists = () => {
               <h3>{list.listname}</h3>
               <div className="list-details">
                 <p><strong>Created by:</strong> {list.username}</p>
-                <p><strong>Destinations:</strong> {list.destination_count}</p>
+                <p><strong>Destinations:</strong> {list.destinations ? list.destinations.length : 0}</p>
                 <p><strong>Last modified:</strong> {new Date(list.date_modified).toLocaleDateString()}</p>
               </div>
             </div>

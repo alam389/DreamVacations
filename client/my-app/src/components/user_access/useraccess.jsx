@@ -1,14 +1,14 @@
-import React, { useState} from 'react';
-import NavBar from '../navbar/NavBar';
+import React, { useState, useEffect } from 'react';
+import NavBar from './usernavbar.jsx';
 import PublicLists from '../publiclist/publiclist.jsx';
-import '../guest_access/guest_access.css';
+import './user_access.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-
-const GuestAccess = () => {
+const UserAccess = () => {
   const [searchType, setSearchType] = useState('destination');
   const [searchQuery, setSearchQuery] = useState('');
   const [resultsCount, setResultsCount] = useState('5');
   const [results, setResults] = useState([]);
+  const [userLists, setUserLists] = useState([]); // State to manage user's lists
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,8 +41,34 @@ const GuestAccess = () => {
     window.open(url, '_blank');
   };
 
+  const fetchUserLists = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/user/lists', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include JWT token
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setUserLists(data);
+    } catch (error) {
+      console.error('Failed to fetch user lists:', error);
+    }
+  };
+
+  // Fetch user lists when the component mounts
+  useEffect(() => {
+    fetchUserLists();
+  }, []);
+
   return (
-    <div className="guest-access">
+    <div className="user-access">
       <NavBar />
       <div className="content-wrapper">
         <h1>Explore Dream Destinations</h1>
@@ -120,6 +146,21 @@ const GuestAccess = () => {
           ))}
         </ul>
 
+        {/* Display user lists */}
+        <div className="user-lists">
+          <h2>Your Lists</h2>
+          <ul>
+            {userLists.map((list, index) => (
+              <li key={index}>
+                {list.listname}
+                <button onClick={() => handleDDGSearch(list.listname)}>
+                  View List
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {/* Display public lists */}
         <PublicLists />
       </div>
@@ -127,4 +168,4 @@ const GuestAccess = () => {
   );
 };
 
-export default GuestAccess;
+export default UserAccess;

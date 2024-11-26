@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+@import url('https://unpkg.com/leaflet@1.7.1/dist/leaflet.css');
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background-image: url('/img/greece.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.user-access {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.content-wrapper {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+#searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.search-type,
+.search-input,
+.results-count {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radio-group {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f1f3f5;
+  border-radius: 25px;
+  padding: 0.5rem;
+}
+
+.radio-label {
+  flex: 1;
+  text-align: center;
+}
+
+.radio-label input[type='radio'] {
+  display: none;
+}
+
+.radio-label span {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.radio-label input[type='radio']:checked + span {
+  background-color: #3498db;
+  color: white;
+}
+
+.search-input {
+  display: flex; /* Ensure horizontal alignment */
+  align-items: center; /* Vertically center elements */
+  width: 100%; /* Full width */
+  gap: 0.5rem; /* Spacing between input and button */
+}
+
+.search-input input[type='text'] {
+  flex: 1; /* Input takes up remaining space */
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 25px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.search-input input[type='text']:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.search-input button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+.search-input button:hover {
+  background-color: #2980b9;
+}
+
+.results-count {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.results-count select {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 15px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.results-count select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.map-container {
+  width: 100%;
+  max-width: 800px;
+  height: 400px;
+  background-color: #f1f3f5;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.map-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-size: 1.5rem;
+  color: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 1.5rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .radio-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .radio-label span {
+    display: block;
+  }
+
+  /* Adjusted styles to keep the search button beside the input field */
+  .search-input {
+    flex-direction: row; /* Ensure horizontal alignment */
+    align-items: center;
+  }
+
+  .search-input button {
+    width: auto; /* Remove full width */
+    margin-top: 0; /* Remove top margin */
+  }
+
+  .results-count {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

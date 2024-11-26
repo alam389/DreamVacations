@@ -28,6 +28,14 @@ const Login = () => {
         });
         const data = await response.json();
         console.log(data);
+        
+        if (response.ok) {
+          localStorage.setItem('token', data.token); // Store the JWT token
+          navigate('/useraccess'); // Redirect to useraccess site
+        } else {
+          alert(data.error || 'Login failed.');
+        }
+
       } catch (err) {
         console.log(err);
       }

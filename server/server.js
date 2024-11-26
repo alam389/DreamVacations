@@ -322,22 +322,19 @@ userRouter.post('/list/create_list/:listName', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }
   })
-
-  userRouter.put('/list/add/:listname/:destinationid', async(req, res) => {
-    const{listname, destinationid}= req.params;
-
-    try{
+  userRouter.put('/list/add/:listname/:destinationid', async (req, res) => {
+    const { listname, destinationid } = req.params;
+    let userid = req.user.userid;
+  
+    try {
       let client = await pool.connect();
-      await client.query('INSERT INTO userlist (listname, destination_id) VALUES ($1, $2)', [listname, destinationid]);
-
-
-    }catch (error) {
+      await client.query('INSERT INTO userlist (listname, destinations, user_id) VALUES ($1, ARRAY[$2]::integer[], $3)', [listname, destinationid, userid]);
+      res.json({ message: 'Destination added to list successfully' });
+    } catch (error) {
       console.error('Database query error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
-
   });
-
 //-----------------------------------Admin Routes----------------------------------------//
 
 
