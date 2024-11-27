@@ -177,18 +177,25 @@ publicRouter.post('/login' ,async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-    const destinationId = parseInt(req.params.id, 10); //convert ID to an integer
-    const client = await pool.connect();
+publicRouter.post('/getdestinations', async (req, res) => {
+  const destinationIds = req.body.map(item => item.destination_id); // Extract destination IDs from the JSON body
+  const client = await pool.connect();
 
-    try {
-        const result = await client.query('SELECT * FROM destinations WHERE destination_id = $1', [destinationId]);
-        res.json(result.rows);
-    }catch(error){
-        console.error("Database query error:", error);
-        res.status(400).json({ error: error.message });
-    }
-  });
+  try {
+    const query = `
+      SELECT * 
+      FROM destinations 
+      WHERE destination_id = ANY($1::int[])
+    `;
+    const result = await client.query(query, [destinationIds]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
 
   router.get('/:id/coordinates',async (req, res) => {
     const destinationId = parseInt(req.params.id, 10); //ID to an integer
@@ -294,20 +301,37 @@ userRouter.post('/list/create_list', async (req, res) => {
   }
 });
 
-  userRouter.get('/list/getalist/:listname', async(req, res) => {
-    let listname = req.params.listname;
-    let userid = req.user.userid;
+userRouter.get('/list/getlistdestinations', async (req, res) => {
+  const { list_id } = req.query;
+  let userid = req.user.userid;
 
-    try{
-      console.log(`Getting all lists for user "${userid}"`);
-      let client = await pool.connect();
-      const results = await client.query('SELECT * FROM userlist WHERE (user_id, listname) = $1, $2', [userid, listname]);
-      res.json(results.rows);
-    }catch (error) {
-      console.error('Database query error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+  try {
+    console.log(`Getting all lists for user "${userid}"`);
+    let client = await pool.connect();
+
+    const query = `
+      SELECT 
+        listdestination.destination_id
+      FROM 
+        listdestination
+      INNER JOIN 
+        userlist 
+      ON 
+        listdestination.list_id = userlist.id
+      WHERE 
+        userlist.user_id = $1 
+        AND listdestination.list_id = $2
+    `;
+
+    const results = await client.query(query, [userid, list_id]);
+    const destinationIds = results.rows.map(row => ({ destination_id: row.destination_id })); // Transform the result
+    res.json(destinationIds); // Send the transformed result
+  } catch (error) {
+    console.error('Database query error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  } 
+});
+
 
   userRouter.delete('/list/delete/:listname', async(req, res)=>{
     let listname = req.params.listname;
@@ -323,18 +347,20 @@ userRouter.post('/list/create_list', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }
   })
-  userRouter.put('/list/add/:listname/:destinationid', async (req, res) => {
-    const { listname, destinationid } = req.params;
+  userRouter.post('/list/add', async (req, res) => {
+    const { list_id, destination_id } = req.body;
     let userid = req.user.userid;
-  
     try {
       let client = await pool.connect();
-      await client.query('INSERT INTO userlist (listname, destinations, user_id) VALUES ($1, ARRAY[$2]::integer[], $3)', [listname, destinationid, userid]);
+      await client.query(
+        'INSERT INTO listdestination (list_id, destination_id) VALUES ($1, $2)',
+        [list_id, destination_id]
+      );
       res.json({ message: 'Destination added to list successfully' });
     } catch (error) {
       console.error('Database query error:', error);
       return res.status(500).json({ error: 'Internal server error' });
-    }
+    } 
   });
 
   userRouter.get('/list/getalllists', async (req, res) => {

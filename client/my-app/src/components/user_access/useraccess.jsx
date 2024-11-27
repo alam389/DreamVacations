@@ -3,9 +3,9 @@ import NavBar from './usernavbar.jsx';
 import PublicLists from '../publiclist/publiclist.jsx';
 import CreateListForm from './createlist.jsx'; // Import the new CreateListForm component\
 import UserList from './displayuserlist.jsx'; // Import the new UserList component
+import DestinationMap from './destinationmap.jsx';
 
 import './user_access.css';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
 const UserAccess = () => {
   const [searchType, setSearchType] = useState('destination');
@@ -13,6 +13,7 @@ const UserAccess = () => {
   const [resultsCount, setResultsCount] = useState('5');
   const [results, setResults] = useState([]);
   const [userLists, setUserLists] = useState([]); // State to manage user's lists
+  const [selectedList, setSelectedList] = useState(''); // State to manage selected list
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,12 +40,6 @@ const UserAccess = () => {
     console.log('Search submitted:', { searchType, searchQuery, resultsCount });
   };
 
-  const handleDDGSearch = (destination) => {
-    const query = encodeURIComponent(destination);
-    const url = `https://duckduckgo.com/?q=${query}`;
-    window.open(url, '_blank');
-  };
-
   const handleCreateList = async (listname, description, isPublic) => {
     try {
       const response = await fetch('http://localhost:3000/api/user/list/create_list', {
@@ -68,11 +63,37 @@ const UserAccess = () => {
     }
   };
 
+  // Fetch user lists when the component mounts
+  useEffect(() => {
+    const fetchUserLists = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/user/list/getalllists', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include JWT token
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setUserLists(data);
+      } catch (error) {
+        console.error('Failed to fetch user lists:', error);
+      }
+    };
+
+    fetchUserLists();
+  }, []);
+
   return (
     <div className="user-access">
       <NavBar />
       <div className="content-wrapper">
-        <h1>Explore Dream Destinations</h1>
+        <h1>Welcome</h1>
         <form id="searchForm" onSubmit={handleSubmit}>
           <div className="search-type">
             <label>Search by:</label>
@@ -106,40 +127,16 @@ const UserAccess = () => {
         </form>
 
         {/* Map container */}
-        <MapContainer center={[0, 0]} zoom={2} scrollWheelZoom={false} style={{ height: '500px', width: '100%' }}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-          />
-          {results.map((destination, index) => (
-            <Marker key={index} position={[destination.latitude, destination.longitude]}>
-              <Popup>
-                <b>{destination.destination}</b><br />{destination.country}
-                <b>Region:</b> {destination.region}<br />
-                <b>Cultural Significance:</b> {destination.cultural_significance}<br />
-                <b>Safety:</b> {destination.safety}<br />
-                <b>Approximate Annual Tourists:</b> {destination.approximate_annual_tourists}<br />
-                <b>Best Time to Visit:</b> {destination.best_time_to_visit}<br />
-                <b>Category:</b> {destination.category}<br />
-                <b>Cost of Living:</b> {destination.cost_of_living}<br />
-                <b>Currency:</b> {destination.currency}<br />
-                <b>Description:</b> {destination.description}<br />
-                <b>Famous Foods:</b> {destination.famous_foods}<br />
-                <b>Language:</b> {destination.language}<br />
-                <b>Majority Religion:</b> {destination.majority_religion}<br />
-                <button onClick={() => handleDDGSearch(destination.destination)}>
-                  Search on DDG
-                </button>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        <DestinationMap
+          results={results}
+          userLists={userLists}
+          selectedList={selectedList}
+          setSelectedList={setSelectedList}
+        />
 
         {/* Create a new list */}
         <CreateListForm handleCreateList={handleCreateList} />
-        
-        < UserList /> 
-
+        <UserList/>
         {/* Display public lists */}
         <PublicLists />
       </div>
