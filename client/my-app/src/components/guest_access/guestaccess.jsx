@@ -108,17 +108,7 @@ const GuestAccess = () => {
           ))}
         </MapContainer>
 
-        {/* Display search results */}
-        <ul>
-          {results.map((destination, index) => (
-            <li key={index}>
-              {destination.destination}, {destination.country}
-              <button onClick={() => handleDDGSearch(destination.destination)}>
-                Search on DDG
-              </button>
-            </li>
-          ))}
-        </ul>
+       
 
         {/* Display public lists */}
         <PublicLists />

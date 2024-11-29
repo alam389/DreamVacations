@@ -24,7 +24,8 @@ console.log("PGHOST:", process.env.PGHOST);
 console.log("PGDATABASE:", process.env.PGDATABASE);
 console.log("PGUSER:", process.env.PGUSER);
 console.log("PGPASSWORD:", process.env.PGPASSWORD);
-const port = 3000;
+console.log("PGPORTNUM", process.env.PGHOSTNUM)
+const port = process.env.PORT;
 
 const lists = {}; //object to store favorite lists
 
@@ -32,6 +33,7 @@ const router = express.Router();
 const adminRouter = express.Router();
 const publicRouter = express.Router();
 const userRouter = express.Router();
+
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/api',router);
 app.use('/api/public', publicRouter);
@@ -45,17 +47,19 @@ const {
     PGHOST,
     PGDATABASE,
     PGUSER,
-    PGPASSWORD } = process.env //destructuring
+    PGPASSWORD,
+    PGHOSTNUM
+     } = process.env //destructuring
 //connection logic to neon postgresql
 const pool = new Pool({
     host: PGHOST,
     database: PGDATABASE,
     user: PGUSER,
     password: PGPASSWORD,
-    port: 5432,
+    port: PGHOSTNUM,
     ssl: {
         require: true,
-    }
+    } 
 });
 
 //-----------------------------------helper functions-----------------------------------//
@@ -271,7 +275,35 @@ publicRouter.post('/getdestinations', async (req, res) => {
       client.release();
     }
   });
+  publicRouter.get('/list/getlistdestinations', async (req, res) => {
+    const { list_id } = req.query;
+    let client;
 
+    try {
+      console.log(`Getting destinations for list_id "${list_id}"`);
+      client = await pool.connect();
+
+      const query = `
+        SELECT 
+          listdestination.destination_id
+        FROM 
+          listdestination
+        WHERE 
+          listdestination.list_id = $1
+      `;
+
+      const results = await client.query(query, [list_id]);
+      const destinationIds = results.rows.map(row => ({ destination_id: row.destination_id })); // Transform the result
+      res.json(destinationIds); // Send the transformed result
+    } catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+      if (client) {
+        client.release();
+      }
+    }
+  });
 //-----------------------------------User Routes----------------------------------------//
 
 userRouter.post('/list/create_list', async (req, res) => {
@@ -333,23 +365,38 @@ userRouter.get('/list/getlistdestinations', async (req, res) => {
 });
 
 
-  userRouter.delete('/list/delete/:listname', async(req, res)=>{
-    let listname = req.params.listname;
-    let userid = req.user.userid;
+userRouter.delete('/list/deletelist', async (req, res) => {
+  let { list_id } = req.query;
 
-    try{
-      console.log(`Deleting list "${listname}" for user "${userid}"`);//test
+  try {
+      console.log(`Deleting list and its items for list_id "${list_id}"`); //test
       let client = await pool.connect();
-      await client.query('DELETE FROM userlist WHERE (user_id, listname) = ($1, $2)', [userid, listname]);
-      res.json({ message: 'List deleted successfully' });
-    }catch (error) {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM listdestination WHERE list_id = $1', [list_id]);
+      await client.query('DELETE FROM userlist WHERE id = $1', [list_id]);
+      await client.query('COMMIT');
+      res.json({ message: 'List and its items deleted successfully' });
+  } catch (error) {
+      await client.query('ROLLBACK');
       console.error('Database query error:', error);
       return res.status(500).json({ error: 'Internal server error' });
-    }
-  })
+  }
+});
+  userRouter.delete('/list/deletedestination', async (req, res) => {
+    const { list_id, destination_id } = req.query;
+  
+    try {
+      console.log(`Deleting destination "${destination_id}" from list "${list_id}"`);
+      let client = await pool.connect();
+      await client.query('DELETE FROM listdestination WHERE list_id = $1 AND destination_id = $2', [list_id, destination_id]);
+      res.json({ message: 'Destination deleted successfully' });
+    } catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    } 
+  });
   userRouter.post('/list/add', async (req, res) => {
     const { list_id, destination_id } = req.body;
-    let userid = req.user.userid;
     try {
       let client = await pool.connect();
       await client.query(
@@ -362,7 +409,23 @@ userRouter.get('/list/getlistdestinations', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     } 
   });
-
+  userRouter.put('/list/updatelist', async (req, res) => {
+    const { list_id, listname, description } = req.body;
+    const date_modified = new Date();  
+  
+    try {
+      console.log(`Updating list "${list_id}"`);
+      let client = await pool.connect();
+      await client.query(
+        'UPDATE userlist SET listname = $1, description = $2, date_modified = $3 WHERE id = $4',
+        [listname, description, date_modified, list_id]
+      );
+      res.json({ message: 'List updated successfully' });
+    } catch (error) {
+      console.error('Database query error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    } 
+  });
   userRouter.get('/list/getalllists', async (req, res) => {
     let client = await pool.connect();
     try {
@@ -373,6 +436,27 @@ userRouter.get('/list/getlistdestinations', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     } finally {
       client.release();
+    }
+  });
+
+  userRouter.post('/ratings', async (req, res) => {
+    const{list_id, rating, comment} = req.body;
+    const userid = req.user.userid;
+
+    if (!list_id || !rating) {
+      return res.status(400).json({ error: 'List ID and rating are required.' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+        const result = await client.query('INSERT INTO reviews (list_id, user_id, rating, comment) VALUES ($1,$2,$3,$4) RETURNING *', [list_id, userid, rating, comment]);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error("Database query error:", error);
+        res.status(400).json({ error: error.message });
+
     }
   });
 //-----------------------------------Admin Routes----------------------------------------//
