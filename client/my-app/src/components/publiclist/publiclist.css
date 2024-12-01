@@ -197,21 +197,8 @@
   background-color: #cbd5e0;
 }
 
-.rating {
-  display: flex;
-  align-items: center;
-  margin-top: 0.5rem;
-}
 
-.rating-stars {
-  display: flex;
-  margin-right: 0.5rem;
-}
 
-.rating-value {
-  font-weight: 600;
-  color: #2d3748;
-}
 
 @media (max-width: 768px) {
   .lists-container {

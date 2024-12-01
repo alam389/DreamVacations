@@ -13,21 +13,18 @@ const { sendAuthEmail } = require('./mailer'); // Import the sendEmail function
 app.use(cors()); // Enable CORS for all routes
 
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow only this origin to access the server
+  origin: process.env.APP_URL, // Allow only this origin to access the server
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], // Allowed methods
   credentials: true, // Allow cookies and authentication tokens
 }));
 
 //test 
-console.log("Environment variables loaded from:", './server/.env');// this is me testing this shit
 console.log("PGHOST:", process.env.PGHOST); 
 console.log("PGDATABASE:", process.env.PGDATABASE);
 console.log("PGUSER:", process.env.PGUSER);
 console.log("PGPASSWORD:", process.env.PGPASSWORD);
 console.log("PGPORTNUM", process.env.PGHOSTNUM)
 const port = process.env.PORT;
-
-const lists = {}; //object to store favorite lists
 
 const router = express.Router();
 const adminRouter = express.Router();
@@ -40,6 +37,7 @@ app.use('/api/public', publicRouter);
 app.use('/api/user', userRouter);
 app.use('/api/admin', adminRouter);
 userRouter.use(authenticateToken);
+adminRouter.use(authenticateToken);
 
 
 
@@ -155,21 +153,25 @@ publicRouter.post('/auth', async (req, res) => {
   });
 });
 
-publicRouter.post('/login' ,async (req, res) => {
+publicRouter.post('/login', async (req, res) => {
   const { username, password } = req.body;
   const client = await pool.connect();
   try {
-    const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);//query the database
-    const user = result.rows[0];//get the first row
-    if (user && await bcrypt.compare(password, user.password)) {//compare the password using bcrypt
+    const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = result.rows[0];
+    if (user && await bcrypt.compare(password, user.password)) {
       const token = jwt.sign({
         userid: user.user_id,
-        username: user.username}, 
-        process.env.JWT_SECRET, 
-        { expiresIn: '1h' }
-      );
-      console.log(result.rows[0]);//log the results
-      res.json({ message: 'Login successful',userid: user.user_id, token: token});
+        username: user.username
+      }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+      console.log(result.rows[0]);
+      res.json({ 
+        message: 'Login successful',
+        userid: user.user_id,
+        token: token,
+        email_verified: user.email_verified // Include email_verified status
+      });
     } else {
       res.status(401).json({ error: 'Invalid username or password' });
     }
@@ -180,7 +182,6 @@ publicRouter.post('/login' ,async (req, res) => {
     client.release();
   }
 });
-
 publicRouter.post('/getdestinations', async (req, res) => {
   const destinationIds = req.body.map(item => item.destination_id); // Extract destination IDs from the JSON body
   const client = await pool.connect();
@@ -196,6 +197,32 @@ publicRouter.post('/getdestinations', async (req, res) => {
   } catch (error) {
     console.error("Database query error:", error);
     res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+publicRouter.post('/resend-verification', async (req, res) => {
+  const { username } = req.body;
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    if (user.email_verified) {
+      return res.status(400).json({ error: 'Email is already verified' });
+    }
+
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '3h' });
+    const authLink = `${process.env.APP_URL}/auth?token=${token}`;
+    const html = `<p>Welcome, ${username}! Please verify your email by clicking <a href="${authLink}">here</a>.</p>`;
+
+    await sendAuthEmail(user.email, 'Authenticate Your Email', html);
+    res.json({ message: 'Verification email resent successfully' });
+  } catch (error) {
+    console.error('Database query error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();
   }
@@ -266,7 +293,7 @@ publicRouter.post('/getdestinations', async (req, res) => {
   publicRouter.get('/list/getalllists', async (req, res) => {
     let client = await pool.connect();
     try {
-      const results = await client.query('SELECT * FROM userlist WHERE visibility = true');
+      const results = await client.query('SELECT * FROM userlist_with_destination_count WHERE visibility = true');
       res.json(results.rows);
     } catch (error) {
       console.error('Database query error:', error);
@@ -459,13 +486,50 @@ userRouter.delete('/list/deletelist', async (req, res) => {
 
     }
   });
+  publicRouter.get('/ratings', async (req, res) => {
+    const { list_id } = req.query;
+    const client = await pool.connect();
+  
+    try {
+      const result = await client.query('SELECT * FROM reviews WHERE list_id = $1', [list_id]);
+      const reviews = result.rows;
+  
+      if (reviews.length === 0) {
+        return res.json({ averageRating: 0, comment: null });
+      }
+  
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+      const averageRating = totalRating / reviews.length;
+      const comment = reviews[0].comment; // Select the first comment to display
+  
+      res.json({ averageRating, comment });
+    } catch (error) {
+      console.error("Database query error:", error);
+      res.status(400).json({ error: error.message });
+    } finally {
+      client.release();
+    }
+  });
 //-----------------------------------Admin Routes----------------------------------------//
 
+adminRouter.patch('/users/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { is_disabled } = req.body;
+  const client = await pool.connect();
 
+  try {
+    const result = await client.query('UPDATE users SET is_disabled = $1 WHERE user_id = $2', [is_disabled, userId]);
+    res.status(200).send('User updated successfully');
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(400).json({ error: error.message });
+  }
+});
 
 
 
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running`);
   });

@@ -1,17 +1,41 @@
 import React, { useState } from 'react';
 import './login.css';
 import { useNavigate } from 'react-router-dom';
+import Modal from './email-verified.jsx';
+
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [showTerms, setShowTerms] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
   const navigate = useNavigate();
-
 
   const handleGuestLogin = () => {
     navigate('/guest_access');
+  };
+
+  const handleResendEmail = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/public/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert('Verification email resent successfully.');
+      } else {
+        alert(data.error || 'Failed to resend verification email.');
+      }
+    } catch (err) {
+      console.log(err);
+      alert('An error occurred while resending the verification email.');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -28,14 +52,18 @@ const Login = () => {
         });
         const data = await response.json();
         console.log(data);
-        
+
         if (response.ok) {
+          if (!data.email_verified) {
+            setModalMessage('Please verify your email to continue.');
+            setShowModal(true);
+            return;
+          }
           localStorage.setItem('token', data.token); // Store the JWT token
           navigate('/useraccess'); // Redirect to useraccess site
         } else {
           alert(data.error || 'Login failed.');
         }
-
       } catch (err) {
         console.log(err);
       }
@@ -47,14 +75,14 @@ const Login = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, email, password }),
+          body: JSON.stringify({ email, username, password }),
         });
         const data = await response.json();
         console.log(data);
 
         if (response.ok) {
-          alert('Check your email to verify your account.');
-          window.location.reload();
+          alert('Registration successful! Please check your email to verify your account.');
+          setIsLogin(true); // Switch to login view after successful registration
         } else {
           alert(data.error || 'Registration failed.');
         }
@@ -186,6 +214,12 @@ const Login = () => {
           </div>
         </div>
       )}
+      <Modal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onResend={handleResendEmail}
+        message={modalMessage}
+      />
     </div>
   );
 };

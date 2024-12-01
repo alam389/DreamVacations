@@ -4,7 +4,9 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+
   },
   "author": "",
   "license": "ISC",
@@ -18,9 +20,11 @@
     "express-session": "^1.18.1",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.16",
-    "nodemon": "^3.1.7",
     "passport-local": "^1.0.0",
     "pg": "^8.13.1",
     "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
   }
 }

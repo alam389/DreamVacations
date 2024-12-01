@@ -7,9 +7,10 @@ const PublicLists = () => {
   const [selectedList, setSelectedList] = useState(null);
   const [destinations, setDestinations] = useState([]);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [currentDestinationId, setCurrentDestinationId] = useState(null);
+  const [ratings, setRatings] = useState({});
   const [reviewText, setReviewText] = useState('');
   const [starRating, setStarRating] = useState(0);
+  const [currentReviewListId, setCurrentReviewListId] = useState(null);
 
   useEffect(() => {
     const fetchPublicLists = async () => {
@@ -24,7 +25,21 @@ const PublicLists = () => {
 
     fetchPublicLists();
   }, []);
-
+  const handleWriteReview = (listId) => {
+    console.log('Write Review clicked for list ID:', listId);
+    if (currentReviewListId === listId) {
+      // If the review form is already open for this list, close it
+      setCurrentReviewListId(null);
+      setShowReviewModal(false);
+      setReviewText('');
+      setStarRating(0);
+    } else {
+      setCurrentReviewListId(listId);
+      setShowReviewModal(true);
+      setReviewText('');
+      setStarRating(0);
+    }
+  };
   const handleViewList = async (list_id) => {
     if (selectedList === list_id) {
       setSelectedList(null);
@@ -45,21 +60,52 @@ const PublicLists = () => {
       });
       if (!destinationResponse.ok) throw new Error(`${destinationResponse.status} ${destinationResponse.statusText}`);
 
-      const destinations = await destinationResponse.json();
-      setDestinations(destinations);
+      const destinationsData = await destinationResponse.json();
+      setDestinations(destinationsData);
+
+      // Fetch ratings and comments for the selected list
+      const ratingsResponse = await fetch(`http://localhost:3000/api/public/ratings?list_id=${list_id}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!ratingsResponse.ok) throw new Error(`${ratingsResponse.status} ${ratingsResponse.statusText}`);
+      const ratingsData = await ratingsResponse.json();
+      setRatings((prevRatings) => ({ ...prevRatings, [list_id]: ratingsData }));
     } catch (error) {
-      console.error('Failed to fetch destinations:', error);
+      console.error('Failed to fetch destinations or ratings:', error);
     }
   };
 
-  const handleWriteReview = (destination_id) => {
-    setCurrentDestinationId(destination_id);
-    setShowReviewModal(true);
+  const sanitizeInput = (input) => {
+    return input.replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
+  const limitWords = (input, maxWords) => {
+    const words = input.split(/\s+/);
+    if (words.length > maxWords) {
+      return words.slice(0, maxWords).join(' ');
+    }
+    return input;
+  };
+
+  const containsHarmfulSymbols = (input) => {
+    const harmfulSymbolsPattern = /<script|<\/script|<|>|&|"/i;
+    return harmfulSymbolsPattern.test(input);
   };
 
   const handleSubmitReview = async (listId) => {
     console.log('Submitting review for list ID:', listId);
-  
+
+    // Check for harmful symbols or script tags
+    if (containsHarmfulSymbols(reviewText)) {
+      alert('Your review contains harmful symbols or script tags. Please remove them and try again.');
+      return;
+    }
+
+    // Sanitize and limit the review text
+    const sanitizedReviewText = sanitizeInput(reviewText);
+    const limitedReviewText = limitWords(sanitizedReviewText, 50); // Limit to 50 words
+
     try {
       const response = await fetch('http://localhost:3000/api/user/ratings', {
         method: 'POST',
@@ -68,21 +114,20 @@ const PublicLists = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          list_id: listId,          // Use the correct list ID
+          list_id: listId,
           rating: starRating,
-          comment: reviewText,      // Use 'comment' as expected by the backend
+          comment: limitedReviewText,
         }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to submit review.');
       }
-  
-      const data = await response.json();
-      console.log('Review submitted:', data);
+
+      console.log('Review submitted successfully!');
       alert('Review submitted successfully!');
-  
+
       // Reset the review form
       setShowReviewModal(false);
       setReviewText('');
@@ -92,24 +137,27 @@ const PublicLists = () => {
       alert(`Failed to submit review: ${error.message}`);
     }
   };
-  
-  const renderRating = (rating) => {
-    return (
-      <div className="rating">
-        <div className="rating-stars">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-              key={star}
-              size={16}
-              fill={star <= rating ? "#FFD700" : "none"}
-              stroke={star <= rating ? "#FFD700" : "#CBD5E0"}
-            />
-          ))}
-        </div>
-        <span className="rating-value">{rating.toFixed(1)}</span>
-      </div>
-    );
-  };
+
+  const renderStarRating = () => (
+    <div className="star-rating">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={24}
+          onClick={() => setStarRating(star)}
+          fill={star <= starRating ? "#FFD700" : "none"}
+          stroke={star <= starRating ? "#FFD700" : "#CBD5E0"}
+          style={{ cursor: 'pointer', marginRight: '4px' }}
+        />
+      ))}
+    </div>
+  );
+
+  const renderRating = (rating) => (
+    <div className="rating">
+      <span className="rating-value">{rating.toFixed(1)}</span>
+    </div>
+  );
 
   return (
     <div className="public-lists">
@@ -124,23 +172,33 @@ const PublicLists = () => {
                 onClick={() => handleViewList(list.id)}
               >
                 {selectedList === list.id ? 'Hide' : 'View'}
-                <ChevronRight className={`h-4 w-4 ml-1 transition-transform ${selectedList === list.id ? 'rotate-90' : ''}`} />
+                <ChevronRight
+                  className={`h-4 w-4 ml-1 transition-transform ${
+                    selectedList === list.id ? 'rotate-90' : ''
+                  }`}
+                />
               </button>
             </div>
             <div className="list-details">
-              <p className="list-info">
+              <div className="list-info">
                 <Users className="h-4 w-4 mr-2" />
                 <span>Curator: {list.username}</span>
-              </p>
-              <p className="list-info">
+              </div>
+              <div className="list-info">
                 <MapPin className="h-4 w-4 mr-2" />
-                <span>Places: {list.destinations ? list.destinations.length : 0}</span>
-              </p>
-              <p className="list-info">
+                <span>Places: {list.destination_count || 0}</span>
+              </div>
+              <div className="list-info">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span>Updated: {new Date(list.date_modified).toLocaleDateString()}</span>
-              </p>
-              {renderRating(list.rating || 0)}
+              </div>
+              <div className="list-info">
+                <Star className="h-4 w-4 mr-2" />
+                <span>Rating: {renderRating(ratings[list.id]?.averageRating || 0)}</span>
+              </div>
+              <div className="list-info">
+                <span>Comment: {ratings[list.id]?.comment || 'No comments available'}</span>
+              </div>
               <button
                 className="write-review-button mt-2"
                 onClick={() => handleWriteReview(list.id)}
@@ -151,12 +209,11 @@ const PublicLists = () => {
             {selectedList === list.id && (
               <div className="destination-details">
                 <h4 className="text-xl font-semibold mb-4">Featured Destinations</h4>
-                {destinations.map((destination, index) => (
-                  <div key={index} className="destination-item">
+                {destinations.map((destination) => (
+                  <div key={destination.id} className="destination-item">
                     <h5 className="text-lg font-medium mb-2">{destination.destination}</h5>
                     <p className="destination-info"><strong>Location:</strong> {destination.country}</p>
                     <p className="destination-info">{destination.description}</p>
-                    
                   </div>
                 ))}
               </div>
@@ -164,37 +221,34 @@ const PublicLists = () => {
           </div>
         ))}
       </div>
-
       {showReviewModal && (
         <div className="review-modal">
           <div className="modal-content">
             <h3>Share Your Experience</h3>
-            <div className="mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  size={24}
-                  onClick={() => setStarRating(star)}
-                  fill={star <= starRating ? "#FFD700" : "none"}
-                  stroke={star <= starRating ? "#FFD700" : "#CBD5E0"}
-                  style={{ cursor: 'pointer', marginRight: '4px' }}
-                />
-              ))}
-            </div>
+            {renderStarRating()}
             <textarea
               placeholder="Describe your experience..."
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
+              className="review-textarea"
             />
             <div className="modal-actions">
               <button
                 className="submit-button"
-                onClick={() => handleSubmitReview(list.id)}  // Pass the correct list ID
+                onClick={() => handleSubmitReview(currentReviewListId)}
                 disabled={starRating === 0 || reviewText.trim() === ''}
               >
                 Submit Review
               </button>
-              <button className="cancel-button" onClick={() => setShowReviewModal(false)}>
+              <button
+                className="cancel-button"
+                onClick={() => {
+                  setShowReviewModal(false);
+                  setCurrentReviewListId(null);
+                  setReviewText('');
+                  setStarRating(0);
+                }}
+              >
                 Cancel
               </button>
             </div>
