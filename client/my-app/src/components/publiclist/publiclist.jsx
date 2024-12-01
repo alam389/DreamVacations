@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Users, Calendar, ChevronRight, Star } from 'lucide-react';
 import './publiclist.css';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 const PublicLists = () => {
   const [publicLists, setPublicLists] = useState([]);
@@ -15,7 +16,7 @@ const PublicLists = () => {
   useEffect(() => {
     const fetchPublicLists = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/public/list/getalllists');
+        const response = await fetch(`${apiUrl}/public/list/getalllists`);
         const data = await response.json();
         setPublicLists(data);
       } catch (error) {
@@ -49,11 +50,11 @@ const PublicLists = () => {
 
     setSelectedList(list_id);
     try {
-      const response = await fetch(`http://localhost:3000/api/public/list/getlistdestinations?list_id=${list_id}`);
+      const response = await fetch(`${apiUrl}/public/list/getlistdestinations?list_id=${list_id}`);
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       const destinationIds = await response.json();
 
-      const destinationResponse = await fetch('http://localhost:3000/api/public/getdestinations', {
+      const destinationResponse = await fetch(`${apiUrl}/public/getdestinations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(destinationIds),
@@ -64,7 +65,7 @@ const PublicLists = () => {
       setDestinations(destinationsData);
 
       // Fetch ratings and comments for the selected list
-      const ratingsResponse = await fetch(`http://localhost:3000/api/public/ratings?list_id=${list_id}`, {
+      const ratingsResponse = await fetch(`${apiUrl}/public/ratings?list_id=${list_id}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -107,7 +108,7 @@ const PublicLists = () => {
     const limitedReviewText = limitWords(sanitizedReviewText, 50); // Limit to 50 words
 
     try {
-      const response = await fetch('http://localhost:3000/api/user/ratings', {
+      const response = await fetch(`${apiUrl}/user/ratings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

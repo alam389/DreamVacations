@@ -4,6 +4,8 @@ import PublicLists from '../publiclist/publiclist.jsx';
 import CreateListForm from './createlist.jsx'; // Import the new CreateListForm component\
 import UserList from './displayuserlist.jsx'; // Import the new UserList component
 import DestinationMap from './destinationmap.jsx';
+import DOMPurify from 'dompurify';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 import './user_access.css';
 
@@ -15,11 +17,40 @@ const UserAccess = () => {
   const [userLists, setUserLists] = useState([]); // State to manage user's lists
   const [selectedList, setSelectedList] = useState(''); // State to manage selected list
 
+  // Define a comprehensive list of invalid characters
+  const invalidChars = /[<>\/\\'";{}()=&%!@#$^*|~`]/;
+
+  // Validation function
+  const isValidInput = (input) => {
+    return !invalidChars.test(input);
+  };
+
+  // Sanitize input function
+  const sanitizeInput = (input) => {
+    return DOMPurify.sanitize(input);
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const input = e.target.value;
+    const sanitizedInput = input.replace(invalidChars, '');
+    setSearchQuery(DOMPurify.sanitize(sanitizedInput));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const sanitizedSearchQuery = sanitizeInput(searchQuery);
+
+    // Validate search query
+    if (!isValidInput(sanitizedSearchQuery)) {
+      alert('Search query contains invalid characters. Please remove them and try again.');
+      return; // Prevent submission
+    }
+
     try {
       const response = await fetch(
-        `http://localhost:3000/api/search/${searchType}/${searchQuery}/${resultsCount}`,
+        `${apiUrl}/search/${searchType}/${encodeURIComponent(sanitizedSearchQuery)}/${resultsCount}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
@@ -41,14 +72,22 @@ const UserAccess = () => {
   };
 
   const handleCreateList = async (listname, description, isPublic) => {
+    const sanitizedListName = sanitizeInput(listname);
+
+    // Validate list name
+    if (!isValidInput(sanitizedListName)) {
+      alert('List name contains invalid characters. Please remove them and try again.');
+      return; // Prevent submission
+    }
+
     try {
-      const response = await fetch('http://localhost:3000/api/user/list/create_list', {
+      const response = await fetch(`${apiUrl}/user/list/create_list`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include JWT token
         },
-        body: JSON.stringify({ listname, description, visibility: isPublic }),
+        body: JSON.stringify({ listname: sanitizedListName, description, visibility: isPublic }),
       });
 
       if (!response.ok) {
@@ -67,7 +106,7 @@ const UserAccess = () => {
   useEffect(() => {
     const fetchUserLists = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/user/list/getalllists', {
+        const response = await fetch(`${apiUrl}/user/list/getalllists`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -117,7 +156,7 @@ const UserAccess = () => {
               type="text"
               id="searchQuery"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               placeholder={`Enter ${searchType.toLowerCase()}`}
             />
             <button type="submit">

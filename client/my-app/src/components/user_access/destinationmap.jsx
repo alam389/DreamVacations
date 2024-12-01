@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 const DestinationMap = ({ results, userLists, selectedList, setSelectedList }) => {
   const handleDDGSearch = (destination) => {
@@ -15,7 +16,7 @@ const DestinationMap = ({ results, userLists, selectedList, setSelectedList }) =
     }
     console.log(`Adding destination to list destinationid:${destinationId} list:${selectedList}`);
     try {
-      const response = await fetch(`http://localhost:3000/api/user/list/add`, {
+      const response = await fetch(`${apiUrl}/user/list/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

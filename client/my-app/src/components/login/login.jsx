@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import './login.css';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
+import './login.css';
 import Modal from './email-verified.jsx';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -19,12 +21,12 @@ const Login = () => {
 
   const handleResendEmail = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/public/resend-verification', {
+      const response = await fetch(`${apiUrl}/public/resend-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username: DOMPurify.sanitize(username) }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -38,44 +40,94 @@ const Login = () => {
     }
   };
 
+  const isValidUsername = (username) => {
+    // Disallow a comprehensive list of symbols
+    const invalidChars = /[<>\/\\'";{}()=&%!@#$^*|~`]/;
+    return !invalidChars.test(username);
+  };
+
+  const sanitizeInput = (input) => {
+    return DOMPurify.sanitize(input);
+  };
+
+  const handleUsernameChange = (e) => {
+    const input = e.target.value;
+    // Remove disallowed characters
+    const sanitizedInput = input.replace(/[<>\/\\'";{}()=&%!@#$^*|~`]/g, '');
+    setUsername(DOMPurify.sanitize(sanitizedInput));
+  };
+
+  const handleEmailChange = (e) => {
+    const input = e.target.value;
+    const sanitizedInput = DOMPurify.sanitize(input);
+    setEmail(sanitizedInput);
+  };
+
+  const handlePasswordChange = (e) => {
+    const input = e.target.value;
+    const sanitizedInput = DOMPurify.sanitize(input);
+    setPassword(sanitizedInput);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const sanitizedUsername = sanitizeInput(username);
+    const sanitizedPassword = sanitizeInput(password);
+    const sanitizedEmail = sanitizeInput(email);
+
+    // Validate username
+    if (!isValidUsername(sanitizedUsername)) {
+      alert('Username contains invalid characters. Please remove them and try again.');
+      return; // Prevent submission
+    }
+
     if (isLogin) {
-      console.log('Login:', { username, password });
+      console.log('Login:', { sanitizedUsername, sanitizedPassword });
       try {
-        const response = await fetch('http://localhost:3000/api/public/login', {
+        const response = await fetch(`${apiUrl}/public/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username: sanitizedUsername, password: sanitizedPassword }),
         });
         const data = await response.json();
         console.log(data);
 
         if (response.ok) {
+          if (data.is_disabled) {
+            alert('Please contact admin to enable your account.');
+            return; // Prevent further actions
+          }
           if (!data.email_verified) {
             setModalMessage('Please verify your email to continue.');
             setShowModal(true);
             return;
           }
           localStorage.setItem('token', data.token); // Store the JWT token
-          navigate('/useraccess'); // Redirect to useraccess site
+          localStorage.setItem('is_admin', data.is_admin); // Store the admin status
+
+          if (data.is_admin) {
+            navigate('/admindashboard'); // Redirect to AdminDashboard if user is admin
+          } else {
+            navigate('/useraccess'); // Redirect to useraccess site if user is not admin
+          }
         } else {
           alert(data.error || 'Login failed.');
         }
       } catch (err) {
         console.log(err);
+        alert('An error occurred during login.');
       }
     } else {
-      console.log('Signup:', { email, username, password });
+      console.log('Signup:', { sanitizedEmail, sanitizedUsername, sanitizedPassword });
       try {
-        const response = await fetch('http://localhost:3000/api/public/register', {
+        const response = await fetch(`${apiUrl}/public/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, username, password }),
+          body: JSON.stringify({ email: sanitizedEmail, username: sanitizedUsername, password: sanitizedPassword }),
         });
         const data = await response.json();
         console.log(data);
@@ -88,6 +140,7 @@ const Login = () => {
         }
       } catch (err) {
         console.log(err);
+        alert('An error occurred during registration.');
       }
     }
   };
@@ -108,7 +161,7 @@ const Login = () => {
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 required
               />
             </div>
@@ -119,7 +172,7 @@ const Login = () => {
               type="text"
               id="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={handleUsernameChange}
               required
             />
           </div>
@@ -129,7 +182,7 @@ const Login = () => {
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               required
             />
           </div>

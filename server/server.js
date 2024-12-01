@@ -1,4 +1,3 @@
-
 //importing the libraries
 const express = require('express');
 const app = express();
@@ -8,8 +7,13 @@ require('dotenv').config({ path: './data/.env' });
 const { Pool } = require('pg');
 const cors = require('cors')
 const { sendAuthEmail } = require('./mailer'); // Import the sendEmail function
+const DOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+const { body, param, validationResult } = require('express-validator');
 
 
+const window = new JSDOM('').window;
+const purify = DOMPurify(window);
 app.use(cors()); // Enable CORS for all routes
 
 app.use(cors({
@@ -17,29 +21,29 @@ app.use(cors({
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], // Allowed methods
   credentials: true, // Allow cookies and authentication tokens
 }));
-
-//test 
-console.log("PGHOST:", process.env.PGHOST); 
-console.log("PGDATABASE:", process.env.PGDATABASE);
-console.log("PGUSER:", process.env.PGUSER);
-console.log("PGPASSWORD:", process.env.PGPASSWORD);
-console.log("PGPORTNUM", process.env.PGHOSTNUM)
 const port = process.env.PORT;
 
 const router = express.Router();
 const adminRouter = express.Router();
 const publicRouter = express.Router();
 const userRouter = express.Router();
+const invalidChars = /[<>\/\\'";{}()=&%!@#$^*|~`]/;
 
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/api',router);
 app.use('/api/public', publicRouter);
 app.use('/api/user', userRouter);
 app.use('/api/admin', adminRouter);
+
 userRouter.use(authenticateToken);
-adminRouter.use(authenticateToken);
-
-
+adminRouter.use(authenticateAdmin);
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
 
 const {
     PGHOST,
@@ -73,6 +77,34 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+function authenticateAdmin (req, res, next) {
+  try {
+    // Get token from header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Decoded token:', decoded);
+
+    
+    // Check if user is admin
+    if (!decoded.is_admin) {
+      return res.status(403).json({ error: 'Not authorized as admin' });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
 
 //---------------------------------Public Routes---------------------------------//
 publicRouter.post('/register', async (req, res) => {
@@ -80,7 +112,8 @@ publicRouter.post('/register', async (req, res) => {
   console.log(`Registration attempt for username: ${username}`);
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex
-  if (!emailRegex.test(email)) {
+  const invalidChars = /[<>]/; // Disallow angle brackets in username
+  if (!emailRegex.test(email) || !invalidChars.test(username)) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
 
@@ -106,8 +139,7 @@ publicRouter.post('/register', async (req, res) => {
     const user = insertResult.rows[0]; // Capture the inserted user
     console.log('Newly registered user:', user);
     
-    // Send Authentication Email
-    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '3h' });
+ 
     const authLink = `${process.env.APP_URL}/auth?token=${token}`;
     const html = `<p>Welcome, ${username}! Please verify your email by clicking <a href="${authLink}">here</a>.</p>`;
 
@@ -155,33 +187,59 @@ publicRouter.post('/auth', async (req, res) => {
 
 publicRouter.post('/login', async (req, res) => {
   const { username, password } = req.body;
+
+  // Sanitize inputs
+  const sanitizedUsername = purify.sanitize(username);
+  const sanitizedPassword = purify.sanitize(password);
+
+  // Validate inputs
+  if (invalidChars.test(sanitizedUsername)) {
+    return res.status(400).json({ error: 'Invalid username. Please contact the site administrator.' });
+  }
+
+  if (invalidChars.test(sanitizedPassword)) {
+    return res.status(400).json({ error: 'Invalid password.' });
+  }
+
   const client = await pool.connect();
   try {
-    const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    const result = await client.query('SELECT * FROM users WHERE username = $1', [sanitizedUsername]);
     const user = result.rows[0];
-    if (user && await bcrypt.compare(password, user.password)) {
+
+    if (user && await bcrypt.compare(sanitizedPassword, user.password)) {
+      if (user.is_disabled) {
+        return res.status(403).json({ error: 'Your account is disabled. Please contact the site administrator.' });
+      }
+      if (!user.email_verified) {
+        return res.status(403).json({ error: 'Please verify your email to continue.' });
+      }
+
       const token = jwt.sign({
         userid: user.user_id,
-        username: user.username
+        username: user.username,
+        is_admin: user.is_admin,
+        is_disabled: user.is_disabled
       }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-      console.log(result.rows[0]);
-      res.json({ 
+      return res.json({ 
         message: 'Login successful',
         userid: user.user_id,
         token: token,
-        email_verified: user.email_verified // Include email_verified status
+        email_verified: user.email_verified,
+        is_admin: user.is_admin,
+        is_disabled: user.is_disabled
       });
     } else {
-      res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
   } catch (error) {
     console.error("Database query error:", error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error.' });
   } finally {
     client.release();
   }
 });
+
 publicRouter.post('/getdestinations', async (req, res) => {
   const destinationIds = req.body.map(item => item.destination_id); // Extract destination IDs from the JSON body
   const client = await pool.connect();
@@ -519,14 +577,73 @@ adminRouter.patch('/users/:userId', async (req, res) => {
 
   try {
     const result = await client.query('UPDATE users SET is_disabled = $1 WHERE user_id = $2', [is_disabled, userId]);
-    res.status(200).send('User updated successfully');
+    res.status(200).json({ message: 'User updated successfully', result: result.rows });
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+adminRouter.patch('/reviews/:reviewId', async (req, res) => {
+  const { reviewId } = req.params;
+  const { hidden } = req.body;
+  const client = await pool.connect();
+
+  try {
+    const result = await client.query('UPDATE reviews SET hidden = $1 WHERE review_id = $2', [hidden, reviewId]);
+    res.status(200).json({ message: 'Review updated successfully', result: result.rows });
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+adminRouter.get('/users', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    console.log('Fetching all users...');
+    const result = await client.query('SELECT * FROM users');
     res.json(result.rows);
   } catch (error) {
     console.error("Database query error:", error);
     res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+  
+});
+adminRouter.patch('/users/:userId/admin', async (req, res) => {
+  const { userId } = req.params;
+  const { is_admin } = req.body;
+  const client = await pool.connect();
+
+  try {
+    const result = await client.query('UPDATE users SET is_admin = $1 WHERE user_id = $2', [is_admin, userId]);
+    res.status(200).json({ message: 'User admin status updated successfully', result: result.rows });
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
   }
 });
+adminRouter.get('/reviews', async (req, res) => {
+  const client = await pool.connect();
 
+  try {
+    const result = await client.query('SELECT * FROM reviews');
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Database query error:", error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
 
 
 

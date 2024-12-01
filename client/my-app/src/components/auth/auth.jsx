@@ -1,5 +1,5 @@
-// Auth.js
 import React, { useEffect, useState } from 'react';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 const Auth = () => {
   const [message, setMessage] = useState('Verifying your email...');
@@ -12,7 +12,7 @@ const Auth = () => {
 
       if (token) {
         try {
-          const response = await fetch('http://localhost:3000/api/public/auth', {
+          const response = await fetch(`${apiUrl}/public/auth`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

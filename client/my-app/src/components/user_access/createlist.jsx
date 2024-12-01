@@ -1,13 +1,63 @@
 import React, { useState } from 'react';
+import DOMPurify from 'dompurify';
 
 const CreateListForm = ({ handleCreateList }) => {
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true); // State to manage list visibility
 
+  // Define a comprehensive list of invalid characters
+  const invalidChars = /[<>\/\\'";{}()=&%!@#$^*|~`]/;
+
+  // Validation function
+  const isValidInput = (input) => {
+    return !invalidChars.test(input);
+  };
+
+  // Sanitize input function
+  const sanitizeInput = (input) => {
+    return DOMPurify.sanitize(input);
+  };
+
+  // Handle list name change
+  const handleListNameChange = (e) => {
+    const input = e.target.value;
+    // Remove disallowed characters
+    const sanitizedInput = input.replace(invalidChars, '');
+    setNewListName(DOMPurify.sanitize(sanitizedInput));
+  };
+
+  // Handle list description change
+  const handleListDescriptionChange = (e) => {
+    const input = e.target.value;
+    // Optionally remove disallowed characters from description
+    const sanitizedInput = input.replace(invalidChars, '');
+    setNewListDescription(DOMPurify.sanitize(sanitizedInput));
+  };
+
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleCreateList(newListName, newListDescription, isPublic);
+
+    const sanitizedListName = sanitizeInput(newListName);
+    const sanitizedListDescription = sanitizeInput(newListDescription);
+
+    // Validate list name
+    if (!isValidInput(sanitizedListName)) {
+      alert('List name contains invalid characters. Please remove them and try again.');
+      return; // Prevent submission
+    }
+
+    // Validate list description if necessary
+    if (newListDescription && !isValidInput(sanitizedListDescription)) {
+      alert('List description contains invalid characters. Please remove them and try again.');
+      return; // Prevent submission
+    }
+
+    // Proceed to create the list
+    handleCreateList(sanitizedListName, sanitizedListDescription, isPublic);
+
+    // Reset form fields
     setNewListName('');
     setNewListDescription('');
     setIsPublic(true);
@@ -17,19 +67,24 @@ const CreateListForm = ({ handleCreateList }) => {
     <div className="create-list">
       <h2>Create a New List</h2>
       <form className="create-list-form" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="List Name"
-          value={newListName}
-          onChange={(e) => setNewListName(e.target.value)}
-          className="list-input"
-        />
-        <textarea
-          placeholder="Description (optional)"
-          value={newListDescription}
-          onChange={(e) => setNewListDescription(e.target.value)}
-          className="list-textarea"
-        />
+        <div className="form-group">
+          <input
+            type="text"
+            placeholder="List Name"
+            value={newListName}
+            onChange={handleListNameChange}
+            className="list-input"
+            required
+          />
+        </div>
+        <div className="form-group">
+          <textarea
+            placeholder="Description (optional)"
+            value={newListDescription}
+            onChange={handleListDescriptionChange}
+            className="list-textarea"
+          />
+        </div>
         <div className="visibility-toggle">
           <label>
             <input
@@ -52,13 +107,10 @@ const CreateListForm = ({ handleCreateList }) => {
             Private
           </label>
         </div>
-        <button type="submit" className="create-button">
-          Create List
-        </button>
+        <button type="submit" className="create-button">Create List</button>
       </form>
     </div>
   );
 };
 
 export default CreateListForm;
-

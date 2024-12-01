@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 const DisplayUserList = () => {
   const [userLists, setUserLists] = useState([]); // State to manage user's lists
@@ -10,7 +11,7 @@ const DisplayUserList = () => {
   useEffect(() => {
     const fetchUserLists = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/user/list/getalllists', {
+        const response = await fetch(`${apiUrl}/user/list/getalllists`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -35,7 +36,7 @@ const DisplayUserList = () => {
   const handleListClick = async (list_id) => {
     setSelectedList(list_id);
     try {
-      const response = await fetch(`http://localhost:3000/api/user/list/getlistdestinations?list_id=${list_id}`, {
+      const response = await fetch(`${apiUrl}/user/list/getlistdestinations?list_id=${list_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +50,7 @@ const DisplayUserList = () => {
 
       const destinationIds = await response.json();
 
-      const destinationResponse = await fetch('http://localhost:3000/api/public/getdestinations', {
+      const destinationResponse = await fetch(`${apiUrl}/public/getdestinations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ const DisplayUserList = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/user/list/deletedestination?list_id=${list_id}&destination_id=${destination_id}`, {
+      const response = await fetch(`${apiUrl}/user/list/deletedestination?list_id=${list_id}&destination_id=${destination_id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json', // Correct the Content-Type header
@@ -103,7 +104,7 @@ const DisplayUserList = () => {
 
   const handleUpdateList = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/user/list/updatelist', {
+      const response = await fetch(`${apiUrl}/user/list/updatelist`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +132,7 @@ const DisplayUserList = () => {
     }
   
     try {
-      const response = await fetch(`http://localhost:3000/api/user/list/deletelist?list_id=${selectedList}`, {
+      const response = await fetch(`${apiUrl}/user/list/deletelist?list_id=${selectedList}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
