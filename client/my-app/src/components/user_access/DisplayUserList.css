@@ -1,0 +1,153 @@
+.user-lists-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  .user-lists-title {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  
+  .user-lists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  .list-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: transform 0.3s ease;
+  }
+  
+  .list-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .list-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .list-card-title {
+    font-size: 1.25rem;
+    color: #2c3e50;
+    margin: 0;
+  }
+  
+  .list-card-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .action-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #7f8c8d;
+    transition: color 0.3s ease;
+  }
+  
+  .action-button:hover {
+    color: #34495e;
+  }
+  
+  .list-card-description {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  
+  .list-card-input,
+  .list-card-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  
+  .confirm-button,
+  .cancel-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+  }
+  
+  .confirm-button {
+    color: #27ae60;
+  }
+  
+  .cancel-button {
+    color: #e74c3c;
+  }
+  
+  .destination-list {
+    margin-top: 1rem;
+  }
+  
+  .destination-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .destination-info {
+    flex-grow: 1;
+  }
+  
+  .destination-name {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin: 0;
+  }
+  
+  .destination-country {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin: 0;
+  }
+  
+  .delete-destination-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #e74c3c;
+    transition: color 0.3s ease;
+  }
+  
+  .delete-destination-button:hover {
+    color: #c0392b;
+  }
+  
+  @media (max-width: 768px) {
+    .user-lists-container {
+      padding: 1rem;
+    }
+  
+    .user-lists-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  

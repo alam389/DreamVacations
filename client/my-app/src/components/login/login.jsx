@@ -92,7 +92,6 @@ const Login = () => {
           body: JSON.stringify({ username: sanitizedUsername, password: sanitizedPassword }),
         });
         const data = await response.json();
-        console.log(data);
 
         if (response.ok) {
           if (data.is_disabled) {
@@ -130,7 +129,6 @@ const Login = () => {
           body: JSON.stringify({ email: sanitizedEmail, username: sanitizedUsername, password: sanitizedPassword }),
         });
         const data = await response.json();
-        console.log(data);
 
         if (response.ok) {
           alert('Registration successful! Please check your email to verify your account.');

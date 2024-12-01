@@ -132,7 +132,7 @@ const GuestAccess = () => {
               min="1"
               required
             />
-            <button type="submit">
+            <button type="submit" className='submitButton'>
               <i className="fas fa-search"></i> Search
             </button>
           </div>

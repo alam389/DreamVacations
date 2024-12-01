@@ -32,22 +32,20 @@ body {
 
 h1 {
   color: #2c3e50;
-  text-align: center;
   font-size: 2.5rem;
   margin-bottom: 1.5rem;
 }
 
 #searchForm {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  flex-direction: row; /* Changed from column to row */
+  gap: 1rem; /* Spacing between elements */
 }
 
 .search-type,
 .search-input,
 .results-count {
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
 }
 
@@ -90,9 +88,9 @@ h1 {
 
 .search-input input[type='text'] {
   flex: 1; /* Input takes up remaining space */
-  padding: 1rem;
+  padding: 0.5rem 1rem; /* Reduced padding */
   border: 2px solid #e0e0e0;
-  border-radius: 25px;
+  border-radius: 15px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
   box-sizing: border-box;
@@ -103,14 +101,29 @@ h1 {
   border-color: #3498db;
 }
 
+.search-input input[type='number'] {
+  width: 150px; /* Set a fixed width for number input */
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 15px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.search-input input[type='number']:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
 .search-input button {
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 25px;
-  padding: 0.75rem 1.5rem;
+  border-radius: 15px; /* Reduced border radius */
+  padding: 0.5rem 1rem; /* Reduced padding to make the button smaller */
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem; /* Reduced font size */
   transition: background-color 0.3s ease;
   white-space: nowrap;
 }
@@ -176,17 +189,26 @@ h1 {
     display: block;
   }
 
-  /* Adjusted styles to keep the search button beside the input field */
+  /* Adjusted styles to keep the search button beside the input fields */
   .search-input {
     flex-direction: row; /* Ensure horizontal alignment */
-    align-items: center;
   }
 
   .search-input button {
     width: auto; /* Remove full width */
     margin-top: 0; /* Remove top margin */
   }
-
+  .submitButton {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+    white-space: nowrap;
+  }
   .results-count {
     flex-direction: column;
     align-items: flex-start;

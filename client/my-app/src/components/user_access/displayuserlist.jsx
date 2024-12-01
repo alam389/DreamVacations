@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
+import { Edit2, Eye, Trash2, Check, X } from 'lucide-react';
+import './DisplayUserList.css';
 
 const DisplayUserList = () => {
   const [userLists, setUserLists] = useState([]); // State to manage user's lists
@@ -171,61 +173,87 @@ const DisplayUserList = () => {
   };
 
   return (
-    <div className="public-lists">
-      <h1>Display User List</h1>
-      
-      <div className="user-lists">
-        {userLists.map((list, index) => (
-          <div key={index} className="list-item">
-            {isEditing.listname && selectedList === list.id ? (
-              <input
-                type="text"
-                name="listname"
-                value={editListDetails.listname}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                autoFocus
-              />
-            ) : (
-              <h3>{list.listname}</h3>
-            )}
-            {isEditing.description && selectedList === list.id ? (
-              <textarea
-                name="description"
-                value={editListDetails.description}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                autoFocus
-              />
-            ) : (
-              <p>{list.description}</p>
-            )}
-            <button onClick={() => handleEditList(list)}>Edit</button>
-            <button onClick={() => handleListClick(list.id)}>View</button>
-            {selectedList && (
-  <button onClick={handleDeleteSelectedList}>Delete Selected List</button>
-)}
-            {isEditing.listname || isEditing.description ? (
-              <button onClick={handleUpdateList}>Confirm</button>
-            ) : null}
-            {selectedList === list.id && (
-              <div className="destination-details">
-                {destinationDetails.map((destination, index) => (
-                  <div key={index} className="destination-item">
-                    <h4>{destination.destination}</h4>
-                    <p>{destination.country}</p>
-                    <p>{destination.description}</p>
-                    {/* Add more fields as needed */}
-                    <button onClick={() => handleDeleteDestination(list.id, destination.destination_id)}>Delete</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+   
+      <div className="user-lists-container">
+        <h1 className="user-lists-title">Your Travel Lists</h1>
         
+        <div className="user-lists-grid">
+          {userLists.map((list) => (
+            <div key={list.id} className="list-card">
+              <div className="list-card-header">
+                {isEditing.listname && selectedList === list.id ? (
+                  <input
+                    type="text"
+                    name="listname"
+                    value={editListDetails.listname}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    className="list-card-input"
+                    autoFocus
+                  />
+                ) : (
+                  <h3 className="list-card-title">{list.listname}</h3>
+                )}
+                <div className="list-card-actions">
+                  <button className="action-button" onClick={() => handleEditList(list)} aria-label="Edit list">
+                    <Edit2 size={18} />
+                  </button>
+                  <button className="action-button" onClick={() => handleListClick(list.id)} aria-label="View list">
+                    <Eye size={18} />
+                  </button>
+                  {selectedList === list.id && (
+                    <button className="action-button" onClick={handleDeleteSelectedList} aria-label="Delete list">
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {isEditing.description && selectedList === list.id ? (
+                <textarea
+                  name="description"
+                  value={editListDetails.description}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  className="list-card-textarea"
+                  autoFocus
+                />
+              ) : (
+                <p className="list-card-description">{list.description}</p>
+              )}
+              {isEditing.listname || isEditing.description ? (
+                <div className="edit-actions">
+                  <button className="confirm-button" onClick={handleUpdateList} aria-label="Confirm changes">
+                    <Check size={18} />
+                  </button>
+                  <button className="cancel-button" onClick={() => setIsEditing({ listname: false, description: false })} aria-label="Cancel changes">
+                    <X size={18} />
+                  </button>
+                </div>
+              ) : null}
+              {selectedList === list.id && (
+                <div className="destination-list">
+                  {destinationDetails.map((destination) => (
+                    <div key={destination.destination_id} className="destination-item">
+                      <div className="destination-info">
+                        <h4 className="destination-name">{destination.destination}</h4>
+                        <p className="destination-country">{destination.country}</p>
+                        <p className="destination-description">{destination.description}</p>
+                      </div>
+                      <button 
+                        className="delete-destination-button"
+                        onClick={() => handleDeleteDestination(list.id, destination.destination_id)}
+                        aria-label="Delete destination"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
   );
 };
 
