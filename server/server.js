@@ -72,7 +72,10 @@ function authenticateToken(req, res, next) {
   if (token == null) return res.sendStatus(401); // No token provided
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403); // Invalid token
+    if (err) {
+      console.error('Token verification failed:', err);
+      return res.sendStatus(403); // Forbidden
+    }
     req.user = user;
     next();
   });
@@ -108,52 +111,56 @@ function authenticateAdmin (req, res, next) {
 
 //---------------------------------Public Routes---------------------------------//
 publicRouter.post('/register', async (req, res) => {
-  const { username, email, password } = req.body;
-  console.log(`Registration attempt for username: ${username}`);
-  
+  const { email, username, password } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex
+
   const invalidChars = /[<>]/; // Disallow angle brackets in username
   if (!emailRegex.test(email) || !invalidChars.test(username)) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
-
   const client = await pool.connect();
   try {
-    // Check if the username already exists
-    const userCheck = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    // Check if username or email already exists
+    const userCheck = await client.query('SELECT * FROM users WHERE username = $1 OR email = $2', [username, email]);
     if (userCheck.rows.length > 0) {
-      return res.status(400).json({ error: 'Username already exists' });
+      return res.status(400).json({ error: 'Username or email already exists.' });
     }
-  
-    // Generate salt and hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    
-    // Insert new user into the database and return the inserted user
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert the new user into the database
     const insertResult = await client.query(
-      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *',
-      [username, email, hashedPassword]
+      'INSERT INTO users (username, email, password, email_verified, is_admin, is_disabled) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [username, email, hashedPassword, false, false, false]
     );
 
-    
-    const user = insertResult.rows[0]; // Capture the inserted user
-    console.log('Newly registered user:', user);
-    
- 
+    const newUser = insertResult.rows[0];
+
+    const token = jwt.sign({ username: newUser.username }, process.env.JWT_SECRET, { expiresIn: '3h' });
     const authLink = `${process.env.APP_URL}/auth?token=${token}`;
     const html = `<p>Welcome, ${username}! Please verify your email by clicking <a href="${authLink}">here</a>.</p>`;
 
     await sendAuthEmail(email, 'Authenticate Your Email', html);
 
-    res.status(201).json({ message: 'User created successfully', token: token });
+    return res.status(201).json({ 
+      message: 'Registration successful. Please verify your email to activate your account.',
+      user: {
+        user_id: newUser.user_id,
+        username: newUser.username,
+        email: newUser.email,
+        email_verified: newUser.email_verified,
+        is_admin: newUser.is_admin,
+        is_disabled: newUser.is_disabled
+      }
+    });
   } catch (error) {
-    console.error("Database query error:", error.stack);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Database query error:", error);
+    return res.status(500).json({ error: 'Internal server error.' });
   } finally {
     client.release();
   }
 });
-
 publicRouter.post('/auth', async (req, res) => {
   const { token } = req.body; // Extract token from the request body
   if (!token) {
@@ -190,23 +197,20 @@ publicRouter.post('/login', async (req, res) => {
 
   // Sanitize inputs
   const sanitizedUsername = purify.sanitize(username);
-  const sanitizedPassword = purify.sanitize(password);
 
   // Validate inputs
   if (invalidChars.test(sanitizedUsername)) {
     return res.status(400).json({ error: 'Invalid username. Please contact the site administrator.' });
   }
 
-  if (invalidChars.test(sanitizedPassword)) {
-    return res.status(400).json({ error: 'Invalid password.' });
-  }
+  
 
   const client = await pool.connect();
   try {
     const result = await client.query('SELECT * FROM users WHERE username = $1', [sanitizedUsername]);
     const user = result.rows[0];
 
-    if (user && await bcrypt.compare(sanitizedPassword, user.password)) {
+    if (user && await bcrypt.compare(password, user.password)) {
       if (user.is_disabled) {
         return res.status(403).json({ error: 'Your account is disabled. Please contact the site administrator.' });
       }
@@ -417,7 +421,54 @@ userRouter.post('/list/create_list', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+userRouter.put('/updatepassword', async (req, res) => {
+  const userId = req.user.userid; // Assuming the authenticateToken middleware sets req.user
+  const { oldPassword, newPassword } = req.body;
 
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ error: 'Old password and new password are required.' });
+  }
+
+  try {
+    const client = await pool.connect();
+
+    try {
+      
+      const userResult = await client.query('SELECT password FROM users WHERE user_id = $1', [userId]);
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found.' });
+      }
+
+      const storedHashedPassword = userResult.rows[0].password;
+
+      // Compare the old password with the stored hashed password
+      const isMatch = await bcrypt.compare(oldPassword, storedHashedPassword);
+
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Old password is incorrect.' });
+      }
+
+      // Hash the new password
+      const saltRounds = 10;
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update the password in the database
+      const updateQuery = 'UPDATE users SET password = $1 WHERE user_id = $2';
+      await client.query(updateQuery, [hashedNewPassword, userId]);
+
+      return res.status(200).json({ message: 'Password updated successfully.' });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      return res.status(500).json({ error: 'Internal server error.' });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Database connection error:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
 userRouter.get('/list/getlistdestinations', async (req, res) => {
   const { list_id } = req.query;
   let userid = req.user.userid;

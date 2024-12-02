@@ -15,6 +15,7 @@ const UserNavBar = () => {
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">DreamVacations</Link>
         <div className="navbar-buttons">
+          <Link to="/update-password" className="navbar-button">Update Password</Link>
           <button onClick={handleLogout} className="navbar-button navbar-button-primary">Logout</button>
         </div>
       </div>

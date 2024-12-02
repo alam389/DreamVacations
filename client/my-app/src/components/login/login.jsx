@@ -42,7 +42,7 @@ const Login = () => {
 
   const isValidUsername = (username) => {
     // Disallow a comprehensive list of symbols
-    const invalidChars = /[<>\/\\'";{}()=&%!@#$^*|~`]/;
+    const invalidChars = /[<>\/\\'";{}()=&%!#$^*|~`]/;
     return !invalidChars.test(username);
   };
 
@@ -53,7 +53,7 @@ const Login = () => {
   const handleUsernameChange = (e) => {
     const input = e.target.value;
     // Remove disallowed characters
-    const sanitizedInput = input.replace(/[<>\/\\'";{}()=&%!@#$^*|~`]/g, '');
+    const sanitizedInput = input.replace(/[<>\/\\'";{}()=&%!#$^*|~`]/g, '');
     setUsername(DOMPurify.sanitize(sanitizedInput));
   };
 
@@ -126,7 +126,7 @@ const Login = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email: sanitizedEmail, username: sanitizedUsername, password: sanitizedPassword }),
+          body: JSON.stringify({username: sanitizedUsername, email: sanitizedEmail, password: sanitizedPassword }),
         });
         const data = await response.json();
 

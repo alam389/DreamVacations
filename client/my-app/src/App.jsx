@@ -8,6 +8,8 @@ import UserAccess from './components/user_access/useraccess';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProtectedRoute from './components/auth/protectedroute'; 
 import AdminRoute from './components/auth/adminroute'; 
+import UpdatePassword from './components/user_access/UpdatePassword';
+
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/guest_access" element={<Guest />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
+        
         <Route
           path="/useraccess"
           element={
