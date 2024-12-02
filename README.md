@@ -1,10 +1,54 @@
-# SE 3316 - Lab 3/4
-Please put all front-end files in the folder named `client` and all back-end files in the folder named `server`.
+# DreamVacations: A BucketList Reimagined
 
-For lab 3, edit `client/index.html` file to add necessary HTML and add links to your CSS files. Add your front-end JavaScript code to `client/lab3.js` Put all your CSS and any other JavaScript files in the `client` folder. Put all your front-end assets in `client/img` folder and back-end assets in `server/data` folder. Git will ignore content in these folders and you must copy them separately to the server when you are deploying.
+WanderLists is a significant evolution of the original *BucketList*, designed with enhanced backend functionality, a modernized frontend, and a focus on leveraging cloud-based technologies for seamless user experiences. This project showcases robust full-stack development, emphasizing security, scalability, and performance.
 
-For lab 4, create front-end framework inside `client` folder.
+---
 
-Edit `server/server.js` file to add JavaScript code that implements your REST API.
+## 🚀 Features
 
-If you use any AI tools, please record the prompts in the file `ai-prompts.txt`. Commit history of this file must match the code changes in your repository.
+### Backend Functionality
+- **RESTful API**: Built with **Node.js** and **Express**:
+  - Supports CRUD operations for destinations, custom lists, and game ratings.
+  - Endpoints for:
+    - Creating, updating, and deleting game ratings.
+    - Searching for games dynamically by title.
+  - Input validation and sanitization to prevent SQL injection and XSS.
+- **Database Management**:
+  - **Cloud-Based PostgreSQL (Neon)** for reliable, scalable data storage.
+  - Dynamic queries for real-time data retrieval.
+  - Initial prototype developed with **MySQL**.
+- **Security Features**:
+  - **JWT Authentication** for secure user sessions.
+  - **Password Hashing** with **bcrypt** for secure storage.
+  - Rate limiting to prevent abuse and ensure fair usage.
+
+### Frontend Functionality
+- **React Frontend**:
+  - Responsive and dynamic user interface.
+  - Components for managing destinations, custom lists, and ratings.
+  - Interactive destination map powered by **OpenStreetMap**.
+  - Real-time data updates and filtering.
+- **User-Friendly Design**:
+  - Modular structure for reusable and efficient components.
+  - Clean and responsive CSS layout for accessibility and aesthetics.
+
+### Deployment
+- Hosted on **Neon** for database management.
+- Backend deployed with **Node.js**, ensuring reliability and performance.
+
+---
+
+## 🧠 What I Learned
+- **Backend Development**:
+  - RESTful API design with **Express**.
+  - Secure authentication using **JWT**.
+  - Advanced database management with **PostgreSQL** and **MySQL**.
+- **Frontend-Backend Integration**:
+  - Connecting React components to APIs for seamless data interaction.
+- **Cloud Technologies**:
+  - Cloud-hosted database management using **Neon PostgreSQL**.
+- **Security Best Practices**:
+  - Implementing bcrypt for password hashing.
+  - Validating and sanitizing inputs to prevent injection attacks.
+
+---
