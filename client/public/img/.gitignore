@@ -2,6 +2,4 @@
 *
 # Except this file
 !.gitignore
-# Ignore all JPEG files
-*.jpeg
-*.jpg
+

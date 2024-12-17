@@ -2,7 +2,7 @@
   margin: 0;
   padding: 0;
   font-family: Arial, sans-serif;
-  background: url('C:/SE 3316/clone2/lab-4-alam389/client/my-app/public/img/paris-background.jpg') no-repeat center center fixed; /* Replace with your image */
+  background: url('../public/img/paris-background.jpg') no-repeat center center fixed; /* Replace with your image */
   background-size: cover;
   display: flex;
   justify-content: center;
