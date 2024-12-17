@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, Globe, Heart, Share2 } from 'lucide-react';
-import './Start.css';
+import './start.css';
 
 const Start = () => {
   const [showModal, setShowModal] = useState(false);
